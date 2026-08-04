@@ -202,6 +202,13 @@ export async function loadPersistedClasses(scopedKey?: string): Promise<RombelCl
     try { localStorage.setItem(k, JSON.stringify(merged)); } catch (err) { void err; }
   });
 
+  // 5. Auto sync merged classes back to MySQL in background
+  if (merged.length > 0) {
+    const now = new Date().toISOString();
+    const payload = allKeys.map(k => ({ id: k, value: merged, updated_at: now }));
+    supabase.from('site_settings').upsert(payload).catch(err => void err);
+  }
+
   return merged;
 }
 
