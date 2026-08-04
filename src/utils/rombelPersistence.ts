@@ -347,6 +347,14 @@ export async function loadPersistedStudents(scopedKey?: string): Promise<any[]> 
     }
   }
 
+  // Sync to local cache if fetched from database
+  if (found && loadedStudents.length > 0) {
+    allKeys.forEach(k => {
+      try { localStorage.setItem(k, JSON.stringify(loadedStudents)); } catch (err) { void err; }
+    });
+    try { localStorage.setItem('siakad_students_cache', JSON.stringify(loadedStudents)); } catch (err) { void err; }
+  }
+
   return loadedStudents;
 }
 

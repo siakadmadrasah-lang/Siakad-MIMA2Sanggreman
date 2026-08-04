@@ -118,6 +118,29 @@ if ($action === 'upsert') {
         exit();
     }
 
+    $stmt = $pdo->prepare("INSERT INTO `$table` (id, value, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW()");
+
+    // Jika payload berupa array/list dari objek [{id, value}, ...]
+    if (isset($payload[0]) && is_array($payload[0])) {
+        $pdo->beginTransaction();
+        try {
+            foreach ($payload as $item) {
+                $itemId = isset($item['id']) ? $item['id'] : null;
+                $itemVal = isset($item['value']) ? json_encode($item['value'], JSON_UNESCAPED_UNICODE) : '{}';
+                if ($itemId) {
+                    $stmt->execute([$itemId, $itemVal]);
+                }
+            }
+            $pdo->commit();
+            echo json_encode(['data' => true, 'error' => null]);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            echo json_encode(['error' => 'Gagal simpan batch ke MySQL: ' . $e->getMessage()]);
+        }
+        exit();
+    }
+
+    // Jika payload berupa tunggal {id, value}
     $id = isset($payload['id']) ? $payload['id'] : null;
     $val = isset($payload['value']) ? json_encode($payload['value'], JSON_UNESCAPED_UNICODE) : '{}';
 
@@ -126,7 +149,6 @@ if ($action === 'upsert') {
         exit();
     }
 
-    $stmt = $pdo->prepare("INSERT INTO `$table` (id, value, updated_at) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW()");
     $stmt->execute([$id, $val]);
 
     echo json_encode(['data' => ['id' => $id], 'error' => null]);

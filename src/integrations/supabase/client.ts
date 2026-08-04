@@ -108,48 +108,42 @@ function createHybridClient() {
         maybeSingle: async () => {
           const cacheKey = getCacheKey();
           
-          // 1. Try local storage / memory first for instant response
-          if (targetId && tableName === 'site_settings') {
-            const localVal = getLocalStoredSetting(targetId);
-            if (localVal) {
-              fetchAsyncRemoteSelect(tableName, targetId, cacheKey);
-              return { data: localVal, error: null };
-            }
-          }
-
-          const cached = memoryCache[cacheKey];
-          if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
-            fetchAsyncRemoteSelect(tableName, targetId, cacheKey);
-            return { data: cached.data || null, error: null };
-          }
-
-          // 2. Fetch from MySQL PHP API bridge or fallback
+          // 1. Try MySQL PHP API bridge first so cross-browser updates are always fetched from MySQL
           try {
             const apiUrl = getTargetApiUrl();
             const url = targetId 
               ? `${apiUrl}?action=select&table=${tableName}&id=${encodeURIComponent(targetId)}`
               : `${apiUrl}?action=select&table=${tableName}`;
-            const res = await fetch(url);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
             if (res.ok) {
               const json = await res.json();
-              if (json && json.data) {
+              if (json && json.data && !json.error) {
                 memoryCache[cacheKey] = { data: json.data, timestamp: Date.now() };
-                if (targetId && tableName === 'site_settings' && json.data.value) {
+                if (targetId && tableName === 'site_settings' && json.data.value !== undefined) {
                   setLocalStoredSetting(targetId, json.data.value);
                 }
                 return { data: json.data, error: null };
               }
             }
           } catch (e) {
-            // MySQL API not reached
+            // MySQL API offline or timeout
           }
 
-          // Final local fallback
+          // 2. Local Storage / Memory Fallback if MySQL offline or unavailable
           if (targetId && tableName === 'site_settings') {
             const localVal = getLocalStoredSetting(targetId);
-            if (localVal) return { data: localVal, error: null };
+            if (localVal) {
+              return { data: localVal, error: null };
+            }
           }
 
+          const cached = memoryCache[cacheKey];
           return { data: cached ? cached.data : null, error: null };
         },
         then: async (resolve: any, reject?: any) => {
@@ -188,30 +182,22 @@ function createHybridClient() {
 
           const cacheKey = getCacheKey();
           
-          // 1. Try Memory / LocalStorage cache
-          const cached = memoryCache[cacheKey];
-          if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
-            let resultList = Array.isArray(cached.data) ? cached.data : (cached.data ? [cached.data] : []);
-            if (targetIds && targetIds.length > 0) {
-              resultList = resultList.filter((item: any) => targetIds!.includes(String(item.id)));
-            } else if (targetId) {
-              resultList = resultList.filter((item: any) => String(item.id) === targetId);
-            }
-            fetchAsyncRemoteSelect(tableName, targetId, cacheKey);
-            const cachedResult = { data: resultList, error: null };
-            return resolve ? resolve(cachedResult) : cachedResult;
-          }
-
-          // 2. Try MySQL API bridge
+          // 1. Try MySQL API bridge first to pull live database changes across browsers
           try {
             const apiUrl = getTargetApiUrl();
             const url = targetId 
               ? `${apiUrl}?action=select&table=${tableName}&id=${encodeURIComponent(targetId)}`
               : `${apiUrl}?action=select&table=${tableName}`;
-            const res = await fetch(url);
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
             if (res.ok) {
               const json = await res.json();
-              if (json && json.data) {
+              if (json && json.data && !json.error) {
                 let listData = Array.isArray(json.data) ? json.data : [json.data];
                 memoryCache[cacheKey] = { data: listData, timestamp: Date.now() };
                 
@@ -233,7 +219,20 @@ function createHybridClient() {
               }
             }
           } catch (e) {
-            // MySQL API error, fallback smoothly
+            // MySQL API error/offline, fallback smoothly
+          }
+
+          // 2. Memory cache fallback
+          const cached = memoryCache[cacheKey];
+          if (cached) {
+            let resultList = Array.isArray(cached.data) ? cached.data : (cached.data ? [cached.data] : []);
+            if (targetIds && targetIds.length > 0) {
+              resultList = resultList.filter((item: any) => targetIds!.includes(String(item.id)));
+            } else if (targetId) {
+              resultList = resultList.filter((item: any) => String(item.id) === targetId);
+            }
+            const cachedResult = { data: resultList, error: null };
+            return resolve ? resolve(cachedResult) : cachedResult;
           }
 
           // 3. Fallback to Local Storage for site_settings
