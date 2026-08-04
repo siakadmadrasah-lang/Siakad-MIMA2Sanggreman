@@ -1,0 +1,8 @@
+{
+  "name": "Remix Si@Kad - Sistem Informasi Akademik 02",
+  "description": "Sistem Informasi Akademik Modern Si@Kad Madrasah",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
