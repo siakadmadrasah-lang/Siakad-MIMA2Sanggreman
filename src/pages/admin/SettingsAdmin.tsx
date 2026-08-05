@@ -2185,6 +2185,143 @@ const SettingsAdmin = () => {
               <CardTitle>Pengaturan Menu & Tampilan Footer</CardTitle>
             </CardHeader>
             <CardContent className="space-y-8">
+              {/* Running Text Footer Card */}
+              <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-emerald-950 text-white shadow-md border border-emerald-800/60 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-800/60 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-600/30 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+                      <Megaphone className="w-5 h-5 text-amber-400 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                        Running Text Footer (Tulisan Berjalan)
+                      </h3>
+                      <p className="text-xs text-emerald-300/80">
+                        Papan berita pengumuman berjalan yang tampil pada bagian atas Footer & Sticky Ticker.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Switch Aktif / Non-Aktif */}
+                  <div className="flex items-center gap-3 bg-slate-950/80 border border-emerald-700/50 px-3.5 py-1.5 rounded-xl self-start sm:self-auto">
+                    <span className="text-xs font-bold text-slate-300">Status Running Text:</span>
+                    <Switch
+                      checked={runningText.enabled}
+                      onCheckedChange={(checked) => {
+                        const updated = { ...runningText, enabled: checked };
+                        setRunningText(updated);
+                        handleSave('running_text', updated);
+                      }}
+                    />
+                    <span className={`text-xs font-extrabold px-2 py-0.5 rounded-md ${
+                      runningText.enabled ? 'bg-emerald-500 text-slate-950' : 'bg-slate-700 text-slate-300'
+                    }`}>
+                      {runningText.enabled ? 'AKTIF' : 'NON-AKTIF'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Textarea & Fast Presets */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-emerald-200">
+                      Teks Pengumuman Running Text Footer:
+                    </label>
+                    <span className="text-[11px] text-emerald-400 font-medium">
+                      {runningText.enabled ? '🟢 Ditampilkan di Footer' : '🔴 Sedang Dinonaktifkan'}
+                    </span>
+                  </div>
+
+                  <Textarea
+                    rows={3}
+                    placeholder="Tuliskan pesan / pengumuman running text footer di sini..."
+                    value={runningText.text}
+                    onChange={(e) => setRunningText({ ...runningText, text: e.target.value })}
+                    className="rounded-xl bg-slate-950 border-emerald-700/60 text-emerald-100 placeholder:text-slate-500 font-medium text-sm focus:ring-emerald-500"
+                  />
+
+                  {/* Fast Presets */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[11px] font-bold text-slate-400">Pilih Preset Cepat:</span>
+                    <button
+                      type="button"
+                      onClick={() => setRunningText({ ...runningText, text: 'Selamat Datang di Si@Kad Madrasah! SPMB Tahun Pelajaran 2026/2027 Telah Resmi Dibuka.' })}
+                      className="text-[10px] bg-slate-800 hover:bg-emerald-900 border border-slate-700 text-emerald-300 px-2.5 py-1 rounded-lg transition-colors font-medium"
+                    >
+                      + SPMB Opened
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRunningText({ ...runningText, text: 'Pengumuman: Penilaian Akhir Semester (PAS) dilaksanakan mulai tanggal 15 Desember. Harap persiapkan diri!' })}
+                      className="text-[10px] bg-slate-800 hover:bg-emerald-900 border border-slate-700 text-amber-300 px-2.5 py-1 rounded-lg transition-colors font-medium"
+                    >
+                      + Ujian PAS
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRunningText({ ...runningText, text: 'Selamat dan Sukses atas Prestasi Para Siswa dalam Lomba AKSIOMA & Kompetensi Sains Madrasah (KSM).' })}
+                      className="text-[10px] bg-slate-800 hover:bg-emerald-900 border border-slate-700 text-teal-300 px-2.5 py-1 rounded-lg transition-colors font-medium"
+                    >
+                      + Ucapan Prestasi
+                    </button>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-3 pt-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-emerald-300 mb-1">
+                        Judul Badge Label (Kiri)
+                      </label>
+                      <Input
+                        placeholder="INFORMASI FOOTER"
+                        value={runningText.badge}
+                        onChange={(e) => setRunningText({ ...runningText, badge: e.target.value })}
+                        className="rounded-xl bg-slate-950 border-emerald-800 text-white text-xs h-9"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-emerald-300 mb-1">
+                        Arah & Kecepatan Berjalan
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          className="w-full h-9 rounded-xl border border-emerald-800 bg-slate-950 text-white px-2 text-xs font-semibold"
+                          value={runningText.direction}
+                          onChange={(e) => setRunningText({ ...runningText, direction: e.target.value })}
+                        >
+                          <option value="right_to_left">➡️ Kanan ke Kiri</option>
+                          <option value="left_to_right">⬅️ Kiri ke Kanan</option>
+                        </select>
+                        <select
+                          className="w-full h-9 rounded-xl border border-emerald-800 bg-slate-950 text-white px-2 text-xs font-semibold"
+                          value={runningText.speed}
+                          onChange={(e) => setRunningText({ ...runningText, speed: e.target.value })}
+                        >
+                          <option value="slow">🐢 Lambat</option>
+                          <option value="normal">⚡ Sedang</option>
+                          <option value="fast">🚀 Cepat</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-emerald-800/40">
+                    <p className="text-[11px] text-slate-400 italic">
+                      * Perubahan Teks Running Text Footer akan langsung tersimpan & tayang di bagian bawah halaman.
+                    </p>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        handleSave('running_text', runningText);
+                        showSuccess('Running text footer berhasil disimpan & diperbarui!');
+                      }}
+                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl h-9 px-4 text-xs shadow-md"
+                    >
+                      <Save className="w-3.5 h-3.5 mr-1.5" /> Simpan Running Text
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               {/* Menu Cepat (Quick Links) */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between border-b pb-2">

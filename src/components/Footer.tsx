@@ -5,7 +5,7 @@ import {
   BookOpen, Facebook, Instagram, Youtube, Twitter, Heart, 
   Home, Info, LayoutGrid, Image, Phone, MapPin, Mail, 
   GraduationCap, Sparkles, ChevronRight, Globe, Award, 
-  BookMarked, Compass, Calendar, Users
+  BookMarked, Compass, Calendar, Users, Megaphone
 } from 'lucide-react';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
@@ -83,8 +83,67 @@ const Footer = () => {
     return name;
   };
 
+  const runningTextSettings = settings.running_text || {};
+  const isRunningTextEnabled = runningTextSettings.enabled !== false;
+  const runningTextContent = runningTextSettings.text || 'Selamat Datang di Si@Kad Madrasah! Informasi & Pengumuman Terbaru dapat Anda lihat di sini.';
+
   return (
     <footer className="bg-slate-950 text-white pb-24 lg:pb-12 border-t border-slate-800/80 print:hidden relative overflow-hidden">
+      {/* Running Text Footer Ticker Bar */}
+      {isRunningTextEnabled && (
+        <div className="w-full bg-emerald-950/90 border-b border-emerald-800/80 py-2.5 px-4 overflow-hidden relative z-20 backdrop-blur-md shadow-inner">
+          <div className="container mx-auto flex items-center gap-3">
+            {/* Badge */}
+            <div className="shrink-0 flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm">
+              <Megaphone className="w-3.5 h-3.5 shrink-0 animate-pulse" />
+              <span>{runningTextSettings.badge || 'INFORMASI FOOTER'}</span>
+            </div>
+
+            {/* Marquee Ticker */}
+            <div className="flex-1 overflow-hidden relative select-none">
+              <div 
+                className={`whitespace-nowrap inline-flex items-center animate-marquee-pause ${
+                  runningTextSettings.direction === 'left_to_right' ? 'animate-marquee-ltr' : 'animate-marquee-rtl'
+                }`}
+                style={{
+                  animationDuration: runningTextSettings.speed === 'slow' ? '85s' : runningTextSettings.speed === 'fast' ? '25s' : '50s'
+                }}
+              >
+                <div className="inline-flex items-center gap-8 text-xs sm:text-sm font-bold text-emerald-100">
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300 inline shrink-0" />
+                    <span>{runningTextContent}</span>
+                  </span>
+                  <span className="opacity-40 text-amber-400">•</span>
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300 inline shrink-0" />
+                    <span>{runningTextContent}</span>
+                  </span>
+                  <span className="opacity-40 text-amber-400">•</span>
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300 inline shrink-0" />
+                    <span>{runningTextContent}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Optional Link Button */}
+            {runningTextSettings.link_url && (
+              <a 
+                href={runningTextSettings.link_url}
+                target={runningTextSettings.link_url.startsWith('http') ? '_blank' : '_self'}
+                rel="noopener noreferrer"
+                className="shrink-0 text-[10px] sm:text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold px-3 py-1 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1 shadow-sm"
+              >
+                <span>{runningTextSettings.link_label || 'Selengkapnya'}</span>
+                <ChevronRight className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Decorative Subtle Background Gradients */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-600/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-10 w-80 h-80 bg-teal-600/5 rounded-full blur-3xl pointer-events-none" />
