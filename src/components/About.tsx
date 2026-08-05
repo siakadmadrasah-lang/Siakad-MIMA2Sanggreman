@@ -121,6 +121,7 @@ const About = () => {
                 onIndexChange={(idx) => setCurrentSlideIndex(idx)}
                 className="w-full h-[320px] sm:h-[400px] lg:h-[440px] object-cover" 
                 alt="Tentang Madrasah"
+                showOverlay={false}
               />
               
               {/* Overlay Gradient */}

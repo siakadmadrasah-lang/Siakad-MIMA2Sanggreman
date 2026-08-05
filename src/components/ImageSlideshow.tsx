@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { formatImageUrl } from '@/utils/imageCompression';
 
 export interface ImageSlideItem {
   url: string;
   title?: string;
   subtitle?: string;
+  badge?: string;
 }
 
 interface ImageSlideshowProps {
   images?: Array<string | ImageSlideItem>;
   className?: string;
   alt?: string;
+  overlayTitle?: string;
+  overlaySubtitle?: string;
+  overlayBadge?: string;
+  showOverlay?: boolean;
+  overlayPosition?: 'bottom' | 'top' | 'center';
   onIndexChange?: (index: number) => void;
   indicatorsPosition?: 'top-right' | 'top-left' | 'bottom-center' | 'top-center';
 }
@@ -20,17 +26,31 @@ const ImageSlideshow: React.FC<ImageSlideshowProps> = ({
   images = [],
   className = "h-48 w-full",
   alt = "Slideshow image",
+  overlayTitle,
+  overlaySubtitle,
+  overlayBadge,
+  showOverlay = true,
+  overlayPosition = 'bottom',
   onIndexChange,
   indicatorsPosition = 'top-right'
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const imageList: string[] = Array.isArray(images) && images.length > 0 
+  const parsedItems: ImageSlideItem[] = Array.isArray(images) && images.length > 0
     ? images.map(item => {
-        const raw = typeof item === 'string' ? item : (item?.url || "/placeholder.svg");
-        return formatImageUrl(raw);
-      }).filter(Boolean)
-    : ["/placeholder.svg"];
+        if (typeof item === 'string') {
+          return { url: formatImageUrl(item) };
+        }
+        return {
+          url: formatImageUrl(item?.url || "/placeholder.svg"),
+          title: item?.title,
+          subtitle: item?.subtitle,
+          badge: item?.badge,
+        };
+      })
+    : [{ url: "/placeholder.svg" }];
+
+  const imageList = parsedItems.map(i => i.url);
 
   useEffect(() => {
     if (currentIndex >= imageList.length) {
@@ -58,7 +78,13 @@ const ImageSlideshow: React.FC<ImageSlideshowProps> = ({
     setCurrentIndex((prev) => (prev === imageList.length - 1 ? 0 : prev + 1));
   };
 
-  const currentUrl = imageList[currentIndex] || "/placeholder.svg";
+  const currentItem = parsedItems[currentIndex] || parsedItems[0];
+  const currentUrl = currentItem?.url || "/placeholder.svg";
+
+  // Dynamic Text Logic: combines item-specific title or fallback to component level overlayTitle
+  const activeTitle = currentItem?.title || overlayTitle;
+  const activeSubtitle = currentItem?.subtitle || overlaySubtitle;
+  const activeBadge = currentItem?.badge || overlayBadge;
 
   return (
     <div className={`relative overflow-hidden bg-slate-900 group/slide ${className}`}>
@@ -81,20 +107,54 @@ const ImageSlideshow: React.FC<ImageSlideshowProps> = ({
       />
 
       {/* Subtle vignette overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/20 z-15 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-slate-950/10 z-[15] pointer-events-none" />
+
+      {/* Dynamic Text Title Overlay directly on photo (Styled like Hero & About floating pill badge) */}
+      {showOverlay && (activeTitle || activeSubtitle || activeBadge) && (
+        <div className="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 z-[20] pointer-events-none">
+          <div className="bg-slate-900/90 backdrop-blur-md p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-white/20 shadow-xl flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shrink-0 shadow-md">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                {activeBadge && (
+                  <span className="inline-block text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-emerald-300">
+                    {activeBadge}
+                  </span>
+                )}
+                {activeTitle && (
+                  <h4 className="text-xs sm:text-sm font-black text-white truncate leading-tight">
+                    {activeTitle}
+                  </h4>
+                )}
+                {activeSubtitle && (
+                  <p className="text-[10px] sm:text-xs text-slate-300 font-medium truncate">
+                    {activeSubtitle}
+                  </p>
+                )}
+              </div>
+            </div>
+            <span className="flex h-2 w-2 sm:h-2.5 sm:w-2.5 relative shrink-0 ml-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-emerald-500"></span>
+            </span>
+          </div>
+        </div>
+      )}
       
       {imageList.length > 1 && (
         <>
           <button
             onClick={handlePrev}
-            className="absolute left-1.5 sm:left-3 top-1/2 -translate-y-1/2 p-1 sm:p-2 rounded-full bg-slate-900/60 text-white backdrop-blur-md opacity-0 group-hover/slide:opacity-100 transition-all hover:bg-emerald-600 hover:scale-110 z-20 shadow-lg border border-white/20"
+            className="absolute left-1.5 sm:left-3 top-1/2 -translate-y-1/2 p-1 sm:p-2 rounded-full bg-slate-900/60 text-white backdrop-blur-md opacity-0 group-hover/slide:opacity-100 transition-all hover:bg-emerald-600 hover:scale-110 z-[25] shadow-lg border border-white/20"
             aria-label="Previous image"
           >
             <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
           <button
             onClick={handleNext}
-            className="absolute right-1.5 sm:right-3 top-1/2 -translate-y-1/2 p-1 sm:p-2 rounded-full bg-slate-900/60 text-white backdrop-blur-md opacity-0 group-hover/slide:opacity-100 transition-all hover:bg-emerald-600 hover:scale-110 z-20 shadow-lg border border-white/20"
+            className="absolute right-1.5 sm:right-3 top-1/2 -translate-y-1/2 p-1 sm:p-2 rounded-full bg-slate-900/60 text-white backdrop-blur-md opacity-0 group-hover/slide:opacity-100 transition-all hover:bg-emerald-600 hover:scale-110 z-[25] shadow-lg border border-white/20"
             aria-label="Next image"
           >
             <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

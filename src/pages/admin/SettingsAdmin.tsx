@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Settings, Globe, User, Sparkles, BookOpen, Plus, Trash2, Palette, Music, Calculator, Heart, Upload, X, ImageIcon, Loader2, UserCircle, Share2, Search, LayoutGrid, Smartphone, KeyRound, AlertCircle, Megaphone, ExternalLink, Copy, History, Check, Clock, Bookmark, Play, MapPin, RotateCcw, Zap, RefreshCw, CheckCircle2, AlertTriangle, Code } from 'lucide-react';
+import { Save, Settings, Globe, User, Sparkles, BookOpen, Plus, Trash2, Palette, Music, Calculator, Heart, Upload, X, ImageIcon, Loader2, UserCircle, Share2, Search, LayoutGrid, Smartphone, KeyRound, AlertCircle, Megaphone, ExternalLink, Copy, History, Check, Clock, Bookmark, Play, MapPin, RotateCcw, Zap, RefreshCw, CheckCircle2, AlertTriangle, Code, Edit, Pencil } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { showSuccess, showError } from '@/utils/toast';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -15,6 +15,7 @@ import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { compressImage, uploadImageToStorage, convertBase64ToPublicUrl, formatImageUrl } from '@/utils/imageCompression';
 import { UpdatePasswordCard } from '@/components/admin/UpdatePasswordCard';
 import { MediaLibraryModal } from '@/components/admin/MediaLibraryModal';
+import { AnnouncementIcon, ANNOUNCEMENT_ICONS } from '@/components/AnnouncementIcon';
 import { appendVersionToAssetUrl, DEFAULT_OG_IMAGE_PATH, DEFAULT_SITE_URL, DEFAULT_SITE_URL_WITH_SLASH, normalizeSiteUrl, SEO_SHARE_IMAGE_STORAGE_PATH, stripVersionFromAssetUrl } from '@/config/site';
 import { getGoogleMapEmbedUrl } from '@/components/Contact';
 
@@ -542,6 +543,197 @@ const SettingsAdmin = () => {
   });
   const [archiveSearch, setArchiveSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const [isRunningTextModalOpen, setIsRunningTextModalOpen] = useState(false);
+  const [editingRunningTextId, setEditingRunningTextId] = useState<string | null>(null);
+  const [modalRunningTextForm, setModalRunningTextForm] = useState({
+    text: '',
+    badge: 'INFORMASI MADRASAH',
+    icon: 'megaphone',
+    direction: 'right_to_left',
+    speed: 'normal',
+    bg_color: 'emerald',
+    link_url: '',
+    link_label: 'Lihat Detail',
+    setActiveNow: true
+  });
+
+  const handleOpenAddRunningTextModal = () => {
+    setEditingRunningTextId(null);
+    setModalRunningTextForm({
+      text: '',
+      badge: 'INFORMASI MADRASAH',
+      icon: 'megaphone',
+      direction: 'right_to_left',
+      speed: 'normal',
+      bg_color: 'emerald',
+      link_url: '',
+      link_label: 'Lihat Detail',
+      setActiveNow: true
+    });
+    setIsRunningTextModalOpen(true);
+  };
+
+  const handleOpenEditRunningTextModal = (item: any) => {
+    setEditingRunningTextId(item.id);
+    setModalRunningTextForm({
+      text: item.text || '',
+      badge: item.badge || 'INFORMASI MADRASAH',
+      icon: item.icon || 'megaphone',
+      direction: item.direction || 'right_to_left',
+      speed: item.speed || 'normal',
+      bg_color: item.bg_color || 'emerald',
+      link_url: item.link_url || '',
+      link_label: item.link_label || 'Lihat Detail',
+      setActiveNow: runningText.text === item.text && runningText.enabled
+    });
+    setIsRunningTextModalOpen(true);
+  };
+
+  const handleSaveModalRunningText = () => {
+    if (!modalRunningTextForm.text.trim()) {
+      showError('Teks running text wajib diisi');
+      return;
+    }
+
+    const currentArchive = Array.isArray(runningText.archive) ? [...runningText.archive] : [];
+    let updatedArchive = [...currentArchive];
+
+    if (editingRunningTextId) {
+      updatedArchive = updatedArchive.map(item => {
+        if (item.id === editingRunningTextId) {
+          return {
+            ...item,
+            text: modalRunningTextForm.text.trim(),
+            badge: modalRunningTextForm.badge || 'INFORMASI MADRASAH',
+            icon: modalRunningTextForm.icon || 'megaphone',
+            direction: modalRunningTextForm.direction || 'right_to_left',
+            speed: modalRunningTextForm.speed || 'normal',
+            bg_color: modalRunningTextForm.bg_color || 'emerald',
+            link_url: modalRunningTextForm.link_url || '',
+            link_label: modalRunningTextForm.link_label || 'Lihat Detail',
+          };
+        }
+        return item;
+      });
+    } else {
+      const newItem = {
+        id: Date.now().toString(),
+        text: modalRunningTextForm.text.trim(),
+        badge: modalRunningTextForm.badge || 'INFORMASI MADRASAH',
+        icon: modalRunningTextForm.icon || 'megaphone',
+        direction: modalRunningTextForm.direction || 'right_to_left',
+        speed: modalRunningTextForm.speed || 'normal',
+        bg_color: modalRunningTextForm.bg_color || 'emerald',
+        link_url: modalRunningTextForm.link_url || '',
+        link_label: modalRunningTextForm.link_label || 'Lihat Detail',
+        created_at: new Date().toISOString()
+      };
+      updatedArchive.unshift(newItem);
+    }
+
+    let updatedRunningText = {
+      ...runningText,
+      archive: updatedArchive
+    };
+
+    if (modalRunningTextForm.setActiveNow) {
+      updatedRunningText = {
+        ...updatedRunningText,
+        enabled: true,
+        text: modalRunningTextForm.text.trim(),
+        badge: modalRunningTextForm.badge || 'INFORMASI MADRASAH',
+        icon: modalRunningTextForm.icon || 'megaphone',
+        direction: modalRunningTextForm.direction || 'right_to_left',
+        speed: modalRunningTextForm.speed || 'normal',
+        bg_color: modalRunningTextForm.bg_color || 'emerald',
+        link_url: modalRunningTextForm.link_url || '',
+        link_label: modalRunningTextForm.link_label || 'Lihat Detail'
+      };
+    }
+
+    setRunningText(updatedRunningText);
+    handleSave('running_text', updatedRunningText);
+    setIsRunningTextModalOpen(false);
+    showSuccess(editingRunningTextId ? 'Running text berhasil diperbarui!' : 'Running text baru berhasil ditambahkan!');
+  };
+
+  const handleToggleActivateItem = (item: any) => {
+    const currentArchive = Array.isArray(runningText.archive) ? [...runningText.archive] : [];
+    
+    const isCurrentlyActive = typeof item.is_active === 'boolean' 
+      ? item.is_active 
+      : (runningText.text === item.text && runningText.enabled);
+
+    const updatedArchive = currentArchive.map(arch => {
+      const isTarget = arch.id === item.id || (arch.text === item.text && arch.created_at === item.created_at);
+      if (isTarget) {
+        return {
+          ...arch,
+          is_active: !isCurrentlyActive
+        };
+      }
+      return arch;
+    });
+
+    const activeCount = updatedArchive.filter(arch => arch.is_active === true).length;
+    const firstActive = updatedArchive.find(arch => arch.is_active === true) || item;
+
+    const updatedRunningText = {
+      ...runningText,
+      enabled: activeCount > 0 ? true : runningText.enabled,
+      archive: updatedArchive,
+      text: firstActive.text,
+      badge: firstActive.badge || 'INFORMASI MADRASAH',
+      icon: firstActive.icon || 'megaphone',
+      direction: firstActive.direction || 'right_to_left',
+      speed: firstActive.speed || 'normal',
+      bg_color: firstActive.bg_color || 'emerald',
+      link_url: firstActive.link_url || '',
+      link_label: firstActive.link_label || 'Lihat Detail'
+    };
+
+    setRunningText(updatedRunningText);
+    handleSave('running_text', updatedRunningText);
+    showSuccess(!isCurrentlyActive ? 'Running text berhasil diaktifkan!' : 'Running text berhasil dinonaktifkan.');
+  };
+
+  const handleActivateAllRunningTexts = () => {
+    const currentArchive = Array.isArray(runningText.archive) ? [...runningText.archive] : [];
+    if (currentArchive.length === 0) return;
+
+    const updatedArchive = currentArchive.map(item => ({ ...item, is_active: true }));
+    const firstActive = updatedArchive[0];
+
+    const updatedRunningText = {
+      ...runningText,
+      enabled: true,
+      archive: updatedArchive,
+      text: firstActive.text,
+      badge: firstActive.badge || 'INFORMASI MADRASAH'
+    };
+
+    setRunningText(updatedRunningText);
+    handleSave('running_text', updatedRunningText);
+    showSuccess('Semua running text berhasil diaktifkan!');
+  };
+
+  const handleDeactivateAllRunningTexts = () => {
+    const currentArchive = Array.isArray(runningText.archive) ? [...runningText.archive] : [];
+    if (currentArchive.length === 0) return;
+
+    const updatedArchive = currentArchive.map(item => ({ ...item, is_active: false }));
+
+    const updatedRunningText = {
+      ...runningText,
+      enabled: false,
+      archive: updatedArchive
+    };
+
+    setRunningText(updatedRunningText);
+    handleSave('running_text', updatedRunningText);
+    showSuccess('Semua running text berhasil dinonaktifkan.');
+  };
 
   const handleApplyArchiveItem = (item: any) => {
     setRunningText(prev => ({
@@ -2202,22 +2394,32 @@ const SettingsAdmin = () => {
                     </div>
                   </div>
 
-                  {/* Switch Aktif / Non-Aktif */}
-                  <div className="flex items-center gap-3 bg-slate-950/80 border border-emerald-700/50 px-3.5 py-1.5 rounded-xl self-start sm:self-auto">
-                    <span className="text-xs font-bold text-slate-300">Status Running Text:</span>
-                    <Switch
-                      checked={runningText.enabled}
-                      onCheckedChange={(checked) => {
-                        const updated = { ...runningText, enabled: checked };
-                        setRunningText(updated);
-                        handleSave('running_text', updated);
-                      }}
-                    />
-                    <span className={`text-xs font-extrabold px-2 py-0.5 rounded-md ${
-                      runningText.enabled ? 'bg-emerald-500 text-slate-950' : 'bg-slate-700 text-slate-300'
-                    }`}>
-                      {runningText.enabled ? 'AKTIF' : 'NON-AKTIF'}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button
+                      type="button"
+                      onClick={handleOpenAddRunningTextModal}
+                      className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs rounded-xl h-9 px-3.5 shadow-md"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Tambah Running Text Baru
+                    </Button>
+
+                    {/* Switch Aktif / Non-Aktif */}
+                    <div className="flex items-center gap-2 bg-slate-950/80 border border-emerald-700/50 px-3 py-1.5 rounded-xl self-start sm:self-auto">
+                      <span className="text-xs font-bold text-slate-300">Status:</span>
+                      <Switch
+                        checked={runningText.enabled}
+                        onCheckedChange={(checked) => {
+                          const updated = { ...runningText, enabled: checked };
+                          setRunningText(updated);
+                          handleSave('running_text', updated);
+                        }}
+                      />
+                      <span className={`text-xs font-extrabold px-2 py-0.5 rounded-md ${
+                        runningText.enabled ? 'bg-emerald-500 text-slate-950' : 'bg-slate-700 text-slate-300'
+                      }`}>
+                        {runningText.enabled ? 'AKTIF' : 'NON-AKTIF'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -2579,15 +2781,29 @@ const SettingsAdmin = () => {
                     Atur papan berita / teks pengumuman melayang yang berjalan secara terus-menerus tepat di atas Sticky Footer.
                   </p>
                 </div>
-                <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-2xl">
-                  <span className="text-xs font-bold text-emerald-800">Status Papan Informasi:</span>
-                  <Switch
-                    checked={runningText.enabled}
-                    onCheckedChange={(checked) => setRunningText({ ...runningText, enabled: checked })}
-                  />
-                  <span className={`text-xs font-extrabold ${runningText.enabled ? 'text-emerald-700' : 'text-slate-400'}`}>
-                    {runningText.enabled ? 'Aktif' : 'Non-Aktif'}
-                  </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    type="button"
+                    onClick={handleOpenAddRunningTextModal}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl h-10 px-4 shadow-md"
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" /> Tambah Running Text Baru
+                  </Button>
+
+                  <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-2xl">
+                    <span className="text-xs font-bold text-emerald-800">Status Utama:</span>
+                    <Switch
+                      checked={runningText.enabled}
+                      onCheckedChange={(checked) => {
+                        const updated = { ...runningText, enabled: checked };
+                        setRunningText(updated);
+                        handleSave('running_text', updated);
+                      }}
+                    />
+                    <span className={`text-xs font-extrabold ${runningText.enabled ? 'text-emerald-700' : 'text-slate-400'}`}>
+                      {runningText.enabled ? 'Aktif' : 'Non-Aktif'}
+                    </span>
+                  </div>
                 </div>
               </CardTitle>
             </CardHeader>
@@ -2606,16 +2822,35 @@ const SettingsAdmin = () => {
                       runningText.bg_color === 'indigo' ? 'bg-indigo-600' :
                       runningText.bg_color === 'amber' ? 'bg-amber-500 text-slate-950' : 'bg-rose-600'
                     }`}>
-                      {runningText.badge || 'INFORMASI'}
+                      {(() => {
+                        const activeList = (Array.isArray(runningText.archive) ? runningText.archive : []).filter((i: any) => i.is_active === true || (typeof i.is_active !== 'boolean' && i.text === runningText.text));
+                        return activeList.length > 1 ? `${activeList.length} PENGUMUMAN` : (runningText.badge || 'INFORMASI');
+                      })()}
                     </div>
                     <div className="flex-1 overflow-hidden relative select-none">
                       <div 
                         className={`whitespace-nowrap animate-marquee-pause ${runningText.direction === 'right_to_left' ? 'animate-marquee-rtl' : 'animate-marquee-ltr'}`}
                         style={{ animationDuration: runningText.speed === 'slow' ? '35s' : runningText.speed === 'fast' ? '12s' : '20s' }}
                       >
-                        <span className="text-[11px] sm:text-xs font-semibold">
-                          {runningText.text || 'Tulis pesan pengumuman di bawah...'}
-                        </span>
+                        {(() => {
+                          const rawList = Array.isArray(runningText.archive) ? runningText.archive : [];
+                          const activeList = rawList.filter((i: any) => i.is_active === true || (typeof i.is_active !== 'boolean' && i.text === runningText.text));
+                          const itemsToRender = activeList.length > 0 ? activeList : [{ badge: runningText.badge || 'INFORMASI', text: runningText.text || 'Tulis pesan pengumuman di bawah...' }];
+                          
+                          return (
+                            <span className="inline-flex items-center">
+                              {itemsToRender.map((item: any, idx: number) => (
+                                <span key={idx} className="inline-flex items-center gap-2 mr-6 text-[11px] sm:text-xs font-semibold">
+                                  <span className="bg-amber-400 text-slate-950 font-extrabold text-[9px] px-1.5 py-0.2 rounded-full uppercase">
+                                    {item.badge || 'INFO'}
+                                  </span>
+                                  <span>{item.text}</span>
+                                  <span className="opacity-40 font-bold ml-2">•</span>
+                                </span>
+                              ))}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                     {runningText.link_url && (
@@ -2625,7 +2860,7 @@ const SettingsAdmin = () => {
                     )}
                   </div>
                   <p className="text-[11px] text-slate-400 italic">
-                    * Papan informasi di atas otomatis akan tampil melayang persis di atas Sticky Footer di seluruh halaman publik website.
+                    * Papan informasi di atas otomatis akan tampil melayang persis di atas Sticky Footer di seluruh halaman publik website. Jika ada beberapa running text diaktifkan, semuanya akan berjalan bersamaan.
                   </p>
                 </div>
               </div>
@@ -2816,6 +3051,43 @@ const SettingsAdmin = () => {
             </CardHeader>
 
             <CardContent className="pt-6 space-y-4">
+              {/* Active Counter & Batch Actions Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-emerald-50/80 border border-emerald-200/80 p-3.5 rounded-2xl">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                    {(Array.isArray(runningText.archive) ? runningText.archive : []).filter(i => i.is_active === true || (typeof i.is_active !== 'boolean' && i.text === runningText.text)).length}
+                  </div>
+                  <div>
+                    <p className="text-xs font-extrabold text-emerald-950">
+                      Multi-Running Text Aktif
+                    </p>
+                    <p className="text-[11px] text-emerald-800 font-medium">
+                      {(Array.isArray(runningText.archive) ? runningText.archive : []).filter(i => i.is_active === true || (typeof i.is_active !== 'boolean' && i.text === runningText.text)).length} dari {(Array.isArray(runningText.archive) ? runningText.archive : []).length} pengumuman dapat berjalan bersamaan di website.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleActivateAllRunningTexts}
+                    size="sm"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl h-8 px-3 shadow-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Aktifkan Semua
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleDeactivateAllRunningTexts}
+                    variant="outline"
+                    size="sm"
+                    className="border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold rounded-xl h-8 px-3"
+                  >
+                    <X className="w-3.5 h-3.5 mr-1 text-slate-500" /> Nonaktifkan Semua
+                  </Button>
+                </div>
+              </div>
+
               {/* Filter Search Bar */}
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -2871,15 +3143,19 @@ const SettingsAdmin = () => {
                 return (
                   <div className="space-y-3">
                     {filteredArchive.map((item, idx) => {
-                      const isActive = runningText.text === item.text;
+                      const itemIsActive = typeof item.is_active === 'boolean'
+                        ? item.is_active
+                        : (runningText.text === item.text && runningText.enabled);
+                      const isCurrentlyActiveInApp = itemIsActive && runningText.enabled;
                       const themeKey = item.bg_color || 'emerald';
+
                       return (
                         <div
                           key={item.id || idx}
                           className={`p-4 rounded-2xl border transition-all duration-200 ${
-                            isActive
-                              ? 'bg-emerald-50/70 border-emerald-400 shadow-sm ring-1 ring-emerald-400/30'
-                              : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                            isCurrentlyActiveInApp
+                              ? 'bg-emerald-50/70 border-emerald-400 shadow-xs ring-1 ring-emerald-400/30'
+                              : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xs'
                           }`}
                         >
                           <div className="flex flex-col gap-3">
@@ -2887,20 +3163,25 @@ const SettingsAdmin = () => {
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex flex-wrap items-center gap-2">
                                 {/* Badge Theme Tag */}
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide text-white ${
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide text-white inline-flex items-center gap-1.5 ${
                                   themeKey === 'emerald' ? 'bg-emerald-600' :
                                   themeKey === 'dark' ? 'bg-slate-900 text-amber-400' :
                                   themeKey === 'indigo' ? 'bg-indigo-600' :
                                   themeKey === 'amber' ? 'bg-amber-500 text-slate-950' : 'bg-rose-600'
                                 }`}>
-                                  {item.badge || 'INFORMASI'}
+                                  <AnnouncementIcon iconId={item.icon} className="w-3.5 h-3.5" />
+                                  <span>{item.badge || 'INFORMASI'}</span>
                                 </span>
 
                                 {/* Active status tag */}
-                                {isActive && (
+                                {isCurrentlyActiveInApp ? (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white animate-pulse">
                                     <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                                    SEDANG AKTIF DI WEBSITE
+                                    AKTIF DI WEBSITE
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                                    NON-AKTIF
                                   </span>
                                 )}
 
@@ -2913,19 +3194,32 @@ const SettingsAdmin = () => {
                                 </span>
                               </div>
 
-                              {/* Timestamp */}
-                              {item.created_at && (
-                                <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-slate-400" />
-                                  {new Date(item.created_at).toLocaleString('id-ID', {
-                                    day: 'numeric',
-                                    month: 'short',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </span>
-                              )}
+                              {/* Toggle Switch & Timestamp */}
+                              <div className="flex items-center gap-3">
+                                {item.created_at && (
+                                  <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
+                                    <Clock className="w-3 h-3 text-slate-400" />
+                                    {new Date(item.created_at).toLocaleString('id-ID', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </span>
+                                )}
+
+                                <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
+                                  <span className="text-[10px] font-bold text-slate-600">Status:</span>
+                                  <Switch
+                                    checked={itemIsActive}
+                                    onCheckedChange={() => handleToggleActivateItem(item)}
+                                  />
+                                  <span className={`text-[10px] font-extrabold ${itemIsActive ? 'text-emerald-700' : 'text-slate-500'}`}>
+                                    {itemIsActive ? 'Aktif' : 'Off'}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
 
                             {/* Text message box */}
@@ -2944,27 +3238,36 @@ const SettingsAdmin = () => {
 
                             {/* Actions bar */}
                             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
-                                  onClick={() => handleApplyArchiveItem(item)}
+                                  onClick={() => handleToggleActivateItem(item)}
                                   size="sm"
-                                  disabled={isActive}
                                   className={`text-xs font-bold rounded-xl h-8 px-3 ${
-                                    isActive
-                                      ? 'bg-emerald-100 text-emerald-700 cursor-default opacity-80'
-                                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                                    itemIsActive
+                                      ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold shadow-xs'
+                                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
                                   }`}
                                 >
-                                  {isActive ? (
+                                  {itemIsActive ? (
                                     <>
-                                      <Check className="w-3.5 h-3.5 mr-1" /> Digunakan Saat Ini
+                                      <X className="w-3.5 h-3.5 mr-1" /> Non-Aktifkan
                                     </>
                                   ) : (
                                     <>
-                                      <Play className="w-3.5 h-3.5 mr-1" /> Gunakan Teks Ini
+                                      <Check className="w-3.5 h-3.5 mr-1" /> Aktifkan Teks Ini
                                     </>
                                   )}
+                                </Button>
+
+                                <Button
+                                  type="button"
+                                  onClick={() => handleOpenEditRunningTextModal(item)}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl h-8 px-3 border-slate-300"
+                                >
+                                  <Pencil className="w-3.5 h-3.5 mr-1 text-slate-600" /> Edit
                                 </Button>
 
                                 <Button
@@ -2993,7 +3296,7 @@ const SettingsAdmin = () => {
                                 size="sm"
                                 className="text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl h-8 px-2.5"
                               >
-                                <Trash2 className="w-3.5 h-3.5 mr-1" /> Hapus dari Arsip
+                                <Trash2 className="w-3.5 h-3.5 mr-1" /> Hapus
                               </Button>
                             </div>
                           </div>
@@ -3042,6 +3345,205 @@ const SettingsAdmin = () => {
         }}
         title={`Pilih Foto Tersimpan untuk ${mediaModalTarget === 'hero_bg' ? 'Background Hero' : 'Gambar SEO'}`}
       />
+
+      {/* Modal Tambah / Edit Running Text */}
+      {isRunningTextModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-5 relative max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <Megaphone className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900">
+                    {editingRunningTextId ? 'Edit Running Text' : 'Tambah Running Text Baru'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Isi pengumuman running text yang akan tampil melayang di website.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRunningTextModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form Fields */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Teks Running Text Pengumuman <span className="text-rose-500">*</span>
+                </label>
+                <Textarea
+                  rows={3}
+                  placeholder="Contoh: Penerimaan Peserta Didik Baru (SPMB) Tahun Pelajaran 2026/2027 Telah Resmi Dibuka!"
+                  value={modalRunningTextForm.text}
+                  onChange={(e) => setModalRunningTextForm({ ...modalRunningTextForm, text: e.target.value })}
+                  className="rounded-xl border-slate-300 text-xs font-medium focus:ring-emerald-500"
+                />
+              </div>
+
+              {/* Logo / Ikon & Badge Label */}
+              <div className="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <label className="block text-xs font-bold text-slate-800 flex items-center justify-between">
+                  <span>Logo / Ikon Pengumuman</span>
+                  <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                    <AnnouncementIcon iconId={modalRunningTextForm.icon} className="w-3.5 h-3.5" />
+                    Logo Terpilih
+                  </span>
+                </label>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 max-h-28 overflow-y-auto p-1 bg-white rounded-xl border border-slate-200">
+                  {ANNOUNCEMENT_ICONS.map((opt) => {
+                    const isSelected = modalRunningTextForm.icon === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setModalRunningTextForm({ ...modalRunningTextForm, icon: opt.id })}
+                        className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all text-center ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white font-bold ring-2 ring-emerald-500 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60'
+                        }`}
+                      >
+                        <AnnouncementIcon iconId={opt.id} className="w-4 h-4 mb-0.5" />
+                        <span className="text-[9px] line-clamp-1 truncate w-full">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Label Badge (Kiri)
+                  </label>
+                  <Input
+                    placeholder="INFORMASI MADRASAH"
+                    value={modalRunningTextForm.badge}
+                    onChange={(e) => setModalRunningTextForm({ ...modalRunningTextForm, badge: e.target.value })}
+                    className="rounded-xl text-xs h-9"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Tema Warna
+                  </label>
+                  <select
+                    className="w-full h-9 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold"
+                    value={modalRunningTextForm.bg_color}
+                    onChange={(e) => setModalRunningTextForm({ ...modalRunningTextForm, bg_color: e.target.value })}
+                  >
+                    <option value="emerald">🟢 Hijau Emerald</option>
+                    <option value="dark">⚫ Hitam Dark</option>
+                    <option value="indigo">🔵 Biru Indigo</option>
+                    <option value="amber">🟡 Emas Amber</option>
+                    <option value="rose">🔴 Merah Rose</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Arah Berjalan
+                  </label>
+                  <select
+                    className="w-full h-9 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold"
+                    value={modalRunningTextForm.direction}
+                    onChange={(e) => setModalRunningTextForm({ ...modalRunningTextForm, direction: e.target.value })}
+                  >
+                    <option value="right_to_left">➡️ Kanan ke Kiri</option>
+                    <option value="left_to_right">⬅️ Kiri ke Kanan</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Kecepatan
+                  </label>
+                  <select
+                    className="w-full h-9 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold"
+                    value={modalRunningTextForm.speed}
+                    onChange={(e) => setModalRunningTextForm({ ...modalRunningTextForm, speed: e.target.value })}
+                  >
+                    <option value="slow">🐢 Lambat</option>
+                    <option value="normal">⚡ Sedang</option>
+                    <option value="fast">🚀 Cepat</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    URL Tautan (Opsional)
+                  </label>
+                  <Input
+                    placeholder="/spmb atau https://..."
+                    value={modalRunningTextForm.link_url}
+                    onChange={(e) => setModalRunningTextForm({ ...modalRunningTextForm, link_url: e.target.value })}
+                    className="rounded-xl text-xs h-9"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Label Tombol Tautan
+                  </label>
+                  <Input
+                    placeholder="Lihat Detail"
+                    value={modalRunningTextForm.link_label}
+                    onChange={(e) => setModalRunningTextForm({ ...modalRunningTextForm, link_label: e.target.value })}
+                    className="rounded-xl text-xs h-9"
+                  />
+                </div>
+              </div>
+
+              {/* Toggle Aktifkan Langsung */}
+              <div className="flex items-center justify-between p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                <div>
+                  <p className="text-xs font-extrabold text-emerald-900">
+                    Aktifkan Langsung di Website
+                  </p>
+                  <p className="text-[11px] text-emerald-700">
+                    Tampilkan running text ini sebagai papan pengumuman utama saat ini.
+                  </p>
+                </div>
+                <Switch
+                  checked={modalRunningTextForm.setActiveNow}
+                  onCheckedChange={(checked) => setModalRunningTextForm({ ...modalRunningTextForm, setActiveNow: checked })}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsRunningTextModalOpen(false)}
+                className="rounded-xl h-10 text-xs font-bold px-4"
+              >
+                Batal
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveModalRunningText}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 text-xs font-extrabold px-5 shadow-md"
+              >
+                <Save className="w-3.5 h-3.5 mr-1.5" />
+                {editingRunningTextId ? 'Simpan Perubahan' : 'Tambah Running Text'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };

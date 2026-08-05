@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Megaphone, X, ExternalLink, ChevronRight, Bell, Sparkles } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import AnnouncementIcon from './AnnouncementIcon';
 
 const THEME_STYLES: Record<string, {
   container: string;
@@ -84,14 +85,28 @@ const RunningTextTicker: React.FC = () => {
     return null;
   }
 
-  const rawText = config.text || 'Selamat Datang di Si@Kad Madrasah!';
-  const direction = config.direction || 'right_to_left'; // 'left_to_right' or 'right_to_left'
-  const speed = config.speed || 'normal'; // 'slow', 'normal', 'fast'
-  const badgeLabel = config.badge || 'INFORMASI MADRASAH';
-  const colorThemeKey = config.bg_color || 'emerald';
+  const rawArchive = Array.isArray(config.archive) ? config.archive : [];
+  const activeItems = rawArchive.filter((item: any) => {
+    if (typeof item.is_active === 'boolean') return item.is_active;
+    return item.text === config.text;
+  });
+
+  const finalActiveItems = activeItems.length > 0 ? activeItems : [
+    {
+      id: 'default',
+      text: config.text || 'Selamat Datang di Si@Kad Madrasah!',
+      badge: config.badge || 'INFORMASI MADRASAH',
+      link_url: config.link_url || '',
+      link_label: config.link_label || 'Lihat Detail'
+    }
+  ];
+
+  const primaryItem = finalActiveItems[0] || {};
+  const direction = config.direction || primaryItem.direction || 'right_to_left';
+  const speed = config.speed || primaryItem.speed || 'normal';
+  const badgeLabel = config.badge || primaryItem.badge || 'INFORMASI MADRASAH';
+  const colorThemeKey = config.bg_color || primaryItem.bg_color || 'emerald';
   const theme = THEME_STYLES[colorThemeKey] || THEME_STYLES.emerald;
-  const linkUrl = config.link_url || '';
-  const linkLabel = config.link_label || 'Lihat Detail';
   const showCloseBtn = config.show_close_button !== false;
 
   // Duration mapping (longer duration = slower scrolling speed)
@@ -107,12 +122,13 @@ const RunningTextTicker: React.FC = () => {
     sessionStorage.setItem('siakad_hide_running_text', 'true');
   };
 
-  const handleLinkClick = () => {
-    if (!linkUrl) return;
-    if (linkUrl.startsWith('http://') || linkUrl.startsWith('https://')) {
-      window.open(linkUrl, '_blank', 'noopener,noreferrer');
+  const handleLinkClick = (url?: string) => {
+    const targetUrl = url || primaryItem.link_url;
+    if (!targetUrl) return;
+    if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
     } else {
-      navigate(linkUrl);
+      navigate(targetUrl);
     }
   };
 
@@ -123,13 +139,15 @@ const RunningTextTicker: React.FC = () => {
     >
       <div className="w-full px-2 sm:px-4 h-7 sm:h-8 flex items-center gap-1.5 sm:gap-2">
         {/* Badge Papan Informasi (Pinned Left) */}
-        <div className={`shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] tracking-wide uppercase z-10 ${theme.badge}`}>
+        <div className={`shrink-0 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] sm:text-[10px] tracking-wide uppercase z-10 ${theme.badge}`}>
           <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white"></span>
           </span>
-          <Megaphone className="w-3 h-3 shrink-0 hidden xs:inline" />
-          <span className="font-extrabold whitespace-nowrap">{badgeLabel}</span>
+          <AnnouncementIcon iconId={primaryItem.icon} className="w-3.5 h-3.5 shrink-0" />
+          <span className="font-extrabold whitespace-nowrap">
+            {finalActiveItems.length > 1 ? `${finalActiveItems.length} PENGUMUMAN` : badgeLabel}
+          </span>
         </div>
 
         {/* Separator Line */}
@@ -141,41 +159,43 @@ const RunningTextTicker: React.FC = () => {
             className={`whitespace-nowrap animate-marquee-pause ${marqueeClass} inline-flex items-center pl-[100%] pr-24`}
             style={{ animationDuration }}
           >
-            <span className={`text-[11px] sm:text-xs ${theme.text} inline-flex items-center gap-6 font-semibold`}>
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-3 h-3 text-amber-400 shrink-0 inline" />
-                <span>{rawText}</span>
-              </span>
-              <span className="opacity-40 font-bold">•</span>
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-3 h-3 text-amber-400 shrink-0 inline" />
-                <span>{rawText}</span>
-              </span>
-              <span className="opacity-40 font-bold">•</span>
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-3 h-3 text-amber-400 shrink-0 inline" />
-                <span>{rawText}</span>
-              </span>
-              <span className="opacity-40 font-bold">•</span>
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-3 h-3 text-amber-400 shrink-0 inline" />
-                <span>{rawText}</span>
-              </span>
-            </span>
+            {[0, 1, 2].map((loopIdx) => (
+              <div key={loopIdx} className="inline-flex items-center">
+                {finalActiveItems.map((item: any, itemIdx: number) => (
+                  <span key={`${loopIdx}-${item.id || itemIdx}`} className={`text-[11px] sm:text-xs ${theme.text} inline-flex items-center gap-2 font-semibold mr-8`}>
+                    <AnnouncementIcon iconId={item.icon} className="w-3.5 h-3.5 text-amber-400 shrink-0 inline" />
+                    {finalActiveItems.length > 1 && (
+                      <span className="bg-amber-400 text-slate-950 font-extrabold text-[9px] px-2 py-0.5 rounded-full uppercase shrink-0 shadow-sm inline-flex items-center gap-1">
+                        <AnnouncementIcon iconId={item.icon} className="w-3 h-3 text-slate-950 shrink-0" />
+                        <span>{item.badge || 'INFO'}</span>
+                      </span>
+                    )}
+                    <span>{item.text}</span>
+                    {item.link_url && (
+                      <button
+                        onClick={() => handleLinkClick(item.link_url)}
+                        className="underline text-amber-300 font-extrabold hover:text-amber-200 ml-1 cursor-pointer"
+                      >
+                        [{item.link_label || 'Lihat'}]
+                      </button>
+                    )}
+                    <span className="opacity-40 font-bold ml-4">•</span>
+                  </span>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Optional Action Button (Pinned Right) */}
-        {linkUrl && (
-          <div className="shrink-0 flex items-center z-10 pl-0.5">
-            <button
-              onClick={handleLinkClick}
-              className={`px-2 py-0.5 rounded text-[9px] sm:text-[10px] font-bold flex items-center gap-0.5 transition-transform active:scale-95 h-5 sm:h-6 ${theme.accentBtn}`}
-            >
-              <span>{linkLabel}</span>
-              <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
+        {/* Dismiss Button */}
+        {showCloseBtn && (
+          <button
+            onClick={handleDismiss}
+            title="Sembunyikan papan informasi"
+            className={`p-1 rounded-full text-xs shrink-0 transition-colors ${theme.closeBtn}`}
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         )}
       </div>
     </div>

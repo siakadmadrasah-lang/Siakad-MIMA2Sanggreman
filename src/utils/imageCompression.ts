@@ -196,3 +196,232 @@ export const convertBase64ToPublicUrl = async (base64Str: string): Promise<strin
 
   return base64Str;
 };
+
+// Helper pembuatan thumbnail otomatis untuk file video
+export const generateVideoThumbnail = (videoSrc: File | string): Promise<string> => {
+  return new Promise((resolve) => {
+    try {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+
+      const url = typeof videoSrc === 'string' ? videoSrc : URL.createObjectURL(videoSrc);
+      video.src = url;
+
+      video.onloadeddata = () => {
+        video.currentTime = Math.min(1.0, (video.duration || 2) / 2);
+      };
+
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.min(640, video.videoWidth || 640);
+          canvas.height = Math.min(360, video.videoHeight || 360);
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const thumbUrl = canvas.toDataURL('image/jpeg', 0.7);
+            if (typeof videoSrc !== 'string') URL.revokeObjectURL(url);
+            resolve(thumbUrl);
+            return;
+          }
+        } catch (e) {
+          console.warn("Error drawing video thumbnail frame:", e);
+        }
+        if (typeof videoSrc !== 'string') URL.revokeObjectURL(url);
+        resolve('');
+      };
+
+      video.onerror = () => {
+        if (typeof videoSrc !== 'string') URL.revokeObjectURL(url);
+        resolve('');
+      };
+
+      setTimeout(() => {
+        if (typeof videoSrc !== 'string') URL.revokeObjectURL(url);
+        resolve('');
+      }, 4000);
+    } catch (err) {
+      resolve('');
+    }
+  });
+};
+
+// Helper parsing YouTube embed & thumbnail
+export const getYouTubeEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}?autoplay=1&rel=0`;
+  }
+  return null;
+};
+
+export const getYouTubeThumbnail = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
+  }
+  return null;
+};
+
+// Auto Compress & Upload untuk Media (Gambar maupun Video)
+export const addTextWatermarkToImage = async (
+  file: File, 
+  options: { title: string; subtitle?: string; badge?: string }
+): Promise<File> => {
+  if (!file || !options.title) return file;
+  
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return resolve(file);
+
+          // 1. Gambar foto utama
+          ctx.drawImage(img, 0, 0);
+
+          // 2. Gambar overlay gradien di bagian bawah untuk kontras teks
+          const gradientHeight = Math.max(120, img.height * 0.35);
+          const gradient = ctx.createLinearGradient(0, img.height - gradientHeight, 0, img.height);
+          gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+          gradient.addColorStop(0.4, 'rgba(0, 0, 0, 0.6)');
+          gradient.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, img.height - gradientHeight, img.width, gradientHeight);
+
+          const paddingLeft = Math.max(20, img.width * 0.04);
+          let currentY = img.height - (gradientHeight * 0.55);
+
+          // 3. Gambar Badge/Label
+          if (options.badge) {
+            const badgeText = options.badge.toUpperCase();
+            const badgeFontSize = Math.max(12, Math.round(img.width * 0.02));
+            ctx.font = `900 ${badgeFontSize}px sans-serif`;
+            const badgeWidth = ctx.measureText(badgeText).width + 20;
+            const badgeHeight = badgeFontSize + 10;
+
+            ctx.fillStyle = '#059669'; // Emerald
+            if (ctx.roundRect) {
+              ctx.beginPath();
+              ctx.roundRect(paddingLeft, currentY - badgeFontSize + 2, badgeWidth, badgeHeight, 10);
+              ctx.fill();
+            } else {
+              ctx.fillRect(paddingLeft, currentY - badgeFontSize + 2, badgeWidth, badgeHeight);
+            }
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(badgeText, paddingLeft + 10, currentY + 2);
+            currentY += badgeHeight + 10;
+          }
+
+          // 4. Gambar Judul Teks
+          const titleFontSize = Math.max(18, Math.round(img.width * 0.038));
+          ctx.font = `900 ${titleFontSize}px sans-serif`;
+          ctx.fillStyle = '#FFFFFF';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+          ctx.shadowBlur = 10;
+          ctx.shadowOffsetX = 2;
+          ctx.shadowOffsetY = 2;
+
+          ctx.fillText(options.title, paddingLeft, currentY);
+          currentY += titleFontSize + 8;
+
+          // 5. Gambar Subtitle / Watermark Nama Madrasah
+          if (options.subtitle) {
+            ctx.shadowBlur = 4;
+            const subFontSize = Math.max(12, Math.round(img.width * 0.022));
+            ctx.font = `600 ${subFontSize}px sans-serif`;
+            ctx.fillStyle = '#CBD5E1';
+            ctx.fillText(options.subtitle, paddingLeft, currentY);
+          }
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const watermarkedFile = new File([blob], file.name, { type: 'image/jpeg' });
+              resolve(watermarkedFile);
+            } else {
+              resolve(file);
+            }
+          }, 'image/jpeg', 0.90);
+        } catch (err) {
+          console.warn("Watermark render error:", err);
+          resolve(file);
+        }
+      };
+      img.onerror = () => resolve(file);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+};
+
+export const uploadMediaToStorage = async (
+  file: File, 
+  folderPath: string = 'gallery',
+  watermarkOptions?: { title: string; subtitle?: string; badge?: string }
+): Promise<{ url: string; type: 'image' | 'video'; thumbnail?: string }> => {
+  if (!file) throw new Error('File tidak ditemukan');
+
+  const isVideo = file.type.startsWith('video/');
+
+  if (!isVideo) {
+    let targetFile = file;
+    if (watermarkOptions && watermarkOptions.title) {
+      targetFile = await addTextWatermarkToImage(file, watermarkOptions);
+    }
+    // Jalankan kompresi & upload gambar
+    const imageUrl = await uploadImageToStorage(targetFile, folderPath);
+    return { url: imageUrl, type: 'image' };
+  }
+
+  // Jika file adalah Video
+  // 1. Buat thumbnail otomatis dari frame video
+  let thumbnail = await generateVideoThumbnail(file);
+
+  // 2. Upload video file ke Storage
+  const cleanFileName = (file.name || 'video.mp4').replace(/[^a-zA-Z0-9.-]/g, '_');
+  const fileName = `${Date.now()}-${cleanFileName}`;
+  const filePath = `${folderPath}/videos/${fileName}`;
+
+  try {
+    const { data: uploadRes, error: uploadErr } = await supabase.storage.from('public').upload(filePath, file, {
+      cacheControl: '31536000',
+      upsert: true
+    });
+
+    if (!uploadErr && uploadRes) {
+      const { data } = supabase.storage.from('public').getPublicUrl(filePath);
+      if (data?.publicUrl) {
+        return {
+          url: formatImageUrl(data.publicUrl),
+          type: 'video',
+          thumbnail: thumbnail || ''
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("Video storage upload fallback:", err);
+  }
+
+  // Fallback ke Object URL / FileReader jika storage belum terkonfigurasi
+  const videoUrl = URL.createObjectURL(file);
+  return {
+    url: videoUrl,
+    type: 'video',
+    thumbnail: thumbnail || ''
+  };
+};
+

@@ -328,6 +328,7 @@ const Hero = () => {
                     className="w-full h-[160px] xs:h-[200px] sm:h-[440px] lg:h-[470px]" 
                     alt="Hero Visual" 
                     indicatorsPosition="top-right"
+                    showOverlay={false}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent pointer-events-none"></div>
                   
