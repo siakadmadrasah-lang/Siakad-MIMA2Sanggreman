@@ -203,33 +203,29 @@ const About = () => {
                     <Award className="w-5 h-5" />
                   </div>
                   
-                  {/* Running Marquee Text on Mobile & Small Containers */}
-                  <div className="sm:hidden min-w-0 flex-1 overflow-hidden">
-                    <motion.div
-                      key={activeTitle}
-                      animate={{ x: [0, "-50%"] }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: Math.max(8, activeTitle.length * 0.4),
-                        ease: "linear"
-                      }}
-                      className="inline-flex whitespace-nowrap text-xs font-bold text-slate-900 gap-6"
-                    >
-                      <span className="flex items-center gap-1.5">
+                  {/* Title Runs (Marquee), Description Stays Static */}
+                  <div className="min-w-0 flex-1 overflow-hidden">
+                    <div className="overflow-hidden">
+                      <motion.div
+                        key={activeTitle}
+                        animate={{ x: [0, "-50%"] }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: Math.max(10, activeTitle.length * 0.4),
+                          ease: "linear"
+                        }}
+                        className="inline-flex whitespace-nowrap text-xs font-black text-slate-900 gap-6"
+                      >
                         <span>{activeTitle}</span>
-                        {activeSubtitle && <span className="text-emerald-700 font-semibold">({activeSubtitle})</span>}
-                      </span>
-                      <span className="flex items-center gap-1.5">
                         <span>{activeTitle}</span>
-                        {activeSubtitle && <span className="text-emerald-700 font-semibold">({activeSubtitle})</span>}
-                      </span>
-                    </motion.div>
-                  </div>
+                      </motion.div>
+                    </div>
 
-                  {/* Desktop Title & Subtitle */}
-                  <div className="hidden sm:block min-w-0 flex-1">
-                    <p className="text-xs font-black text-slate-900 truncate">{activeTitle}</p>
-                    <p className="text-[11px] text-emerald-700 font-bold truncate">{activeSubtitle}</p>
+                    {activeSubtitle && (
+                      <p className="text-[11px] text-emerald-700 font-bold truncate mt-0.5">
+                        {activeSubtitle}
+                      </p>
+                    )}
                   </div>
                 </div>
 
