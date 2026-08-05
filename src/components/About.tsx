@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { 
   BookOpen, 
   Award, 
@@ -17,6 +18,68 @@ import {
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import ImageSlideshow from './ImageSlideshow';
 import { flattenSlideItems } from '@/utils/slideHelpers';
+
+const TypewriterAboutHeading: React.FC<{ line1: string; line2: string }> = ({ line1, line2 }) => {
+  const full1 = line1 || 'Membangun Masa Depan Gemilang';
+  const full2 = line2 || 'Berlandaskan Iman & Ilmu';
+  const totalLength = full1.length + 1 + full2.length;
+
+  const [charCount, setCharCount] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (!isDeleting && charCount < totalLength) {
+      timer = setTimeout(() => {
+        setCharCount((prev) => prev + 1);
+      }, 80);
+    } else if (!isDeleting && charCount === totalLength) {
+      timer = setTimeout(() => {
+        setIsDeleting(true);
+      }, 3500);
+    } else if (isDeleting && charCount > 0) {
+      timer = setTimeout(() => {
+        setCharCount((prev) => prev - 1);
+      }, 40);
+    } else if (isDeleting && charCount === 0) {
+      timer = setTimeout(() => {
+        setIsDeleting(false);
+      }, 600);
+    }
+
+    return () => clearTimeout(timer);
+  }, [charCount, isDeleting, totalLength]);
+
+  const typed1 = full1.slice(0, Math.min(charCount, full1.length));
+  const hasStartedLine2 = charCount > full1.length;
+  const typed2 = hasStartedLine2
+    ? full2.slice(0, Math.max(0, charCount - full1.length - 1))
+    : '';
+
+  return (
+    <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-4 min-h-[2.4em] flex flex-col items-center justify-center">
+      <span>{typed1}</span>
+      {hasStartedLine2 && (
+        <span className="bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800 bg-clip-text text-transparent italic font-serif-premium inline-flex items-center gap-1">
+          {typed2}
+          <motion.span
+            animate={{ opacity: [1, 0, 1] }}
+            transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
+            className="inline-block w-[3px] sm:w-[5px] h-[0.7em] bg-emerald-600 rounded-full ml-0.5 align-middle shadow-xs shrink-0"
+          />
+        </span>
+      )}
+      {!hasStartedLine2 && (
+        <motion.span
+          animate={{ opacity: [1, 0, 1] }}
+          transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
+          className="inline-block w-[3px] sm:w-[5px] h-[0.7em] bg-emerald-600 rounded-full ml-0.5 align-middle shadow-xs shrink-0"
+        />
+      )}
+    </h2>
+  );
+};
 
 const About = () => {
   const { settings, loading } = useSiteSettings();
@@ -96,12 +159,10 @@ const About = () => {
             <span>MENGENAL KAMI</span>
           </div>
 
-          <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-4">
-            Membangun Masa Depan Gemilang <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-800 bg-clip-text text-transparent italic font-serif-premium">
-              Berlandaskan Iman & Ilmu
-            </span>
-          </h2>
+          <TypewriterAboutHeading 
+            line1="Membangun Masa Depan Gemilang" 
+            line2="Berlandaskan Iman & Ilmu" 
+          />
 
           <p className="text-slate-600 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto font-medium">
             {about.description || 'Komitmen kami menghadirkan pendidikan Islam berstandar unggul, memadukan kekayaan nilai tradisi pesantren, keilmuan umum, serta teknologi digital modern.'}
@@ -136,12 +197,37 @@ const About = () => {
               </div>
 
               {/* Floating Info Badge at Bottom */}
-              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-xl flex items-center justify-between z-10">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shrink-0 shadow-md">
+              <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-white/80 shadow-xl flex items-center justify-between z-10 overflow-hidden">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shrink-0 shadow-md">
                     <Award className="w-5 h-5" />
                   </div>
-                  <div className="min-w-0">
+                  
+                  {/* Running Marquee Text on Mobile & Small Containers */}
+                  <div className="sm:hidden min-w-0 flex-1 overflow-hidden">
+                    <motion.div
+                      key={activeTitle}
+                      animate={{ x: [0, "-50%"] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: Math.max(8, activeTitle.length * 0.4),
+                        ease: "linear"
+                      }}
+                      className="inline-flex whitespace-nowrap text-xs font-bold text-slate-900 gap-6"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <span>{activeTitle}</span>
+                        {activeSubtitle && <span className="text-emerald-700 font-semibold">({activeSubtitle})</span>}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <span>{activeTitle}</span>
+                        {activeSubtitle && <span className="text-emerald-700 font-semibold">({activeSubtitle})</span>}
+                      </span>
+                    </motion.div>
+                  </div>
+
+                  {/* Desktop Title & Subtitle */}
+                  <div className="hidden sm:block min-w-0 flex-1">
                     <p className="text-xs font-black text-slate-900 truncate">{activeTitle}</p>
                     <p className="text-[11px] text-emerald-700 font-bold truncate">{activeSubtitle}</p>
                   </div>
