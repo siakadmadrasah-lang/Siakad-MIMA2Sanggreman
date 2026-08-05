@@ -252,7 +252,7 @@ export const generateVideoThumbnail = (videoSrc: File | string): Promise<string>
 // Helper parsing YouTube embed & thumbnail
 export const getYouTubeEmbedUrl = (url: string): string | null => {
   if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   if (match && match[2].length === 11) {
     return `https://www.youtube.com/embed/${match[2]}?autoplay=1&rel=0`;
@@ -262,7 +262,7 @@ export const getYouTubeEmbedUrl = (url: string): string | null => {
 
 export const getYouTubeThumbnail = (url: string): string | null => {
   if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   if (match && match[2].length === 11) {
     return `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
@@ -389,7 +389,7 @@ export const uploadMediaToStorage = async (
 
   // Jika file adalah Video
   // 1. Buat thumbnail otomatis dari frame video
-  let thumbnail = await generateVideoThumbnail(file);
+  const thumbnail = await generateVideoThumbnail(file);
 
   // 2. Upload video file ke Storage
   const cleanFileName = (file.name || 'video.mp4').replace(/[^a-zA-Z0-9.-]/g, '_');
