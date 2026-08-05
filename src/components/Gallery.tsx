@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Maximize2, Camera, ChevronDown, ChevronUp, Play, Video, Image as ImageIcon, Film } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -144,9 +145,23 @@ const Gallery = () => {
                       </>
                     )}
                   </div>
-                  <div className="px-1">
-                    <h3 className="text-sm font-extrabold text-slate-900 line-clamp-1 group-hover:text-emerald-600 transition-colors">{item.title}</h3>
-                    {item.description && <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{item.description}</p>}
+                  <div className="px-1 min-w-0 overflow-hidden">
+                    <div className="overflow-hidden">
+                      <motion.div
+                        key={item.title}
+                        animate={{ x: [0, "-50%"] }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: Math.max(8, (item.title || '').length * 0.4),
+                          ease: "linear"
+                        }}
+                        className="inline-flex whitespace-nowrap text-sm font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors gap-6"
+                      >
+                        <span>{item.title}</span>
+                        <span>{item.title}</span>
+                      </motion.div>
+                    </div>
+                    {item.description && <p className="text-xs text-slate-500 truncate mt-0.5">{item.description}</p>}
                   </div>
                 </div>
               );
@@ -224,7 +239,21 @@ const Gallery = () => {
                     </span>
                   )}
                 </div>
-                <h3 className="text-xl font-extrabold text-slate-900">{selectedItem.title}</h3>
+                <div className="overflow-hidden">
+                  <motion.div
+                    key={selectedItem.title}
+                    animate={{ x: [0, "-50%"] }}
+                    transition={{
+                      repeat: Infinity,
+                      duration: Math.max(10, (selectedItem.title || '').length * 0.4),
+                      ease: "linear"
+                    }}
+                    className="inline-flex whitespace-nowrap text-xl font-extrabold text-slate-900 gap-8"
+                  >
+                    <span>{selectedItem.title}</span>
+                    <span>{selectedItem.title}</span>
+                  </motion.div>
+                </div>
                 {selectedItem.description && (
                   <p className="text-slate-600 text-sm mt-2 leading-relaxed">{selectedItem.description}</p>
                 )}

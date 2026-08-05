@@ -338,33 +338,29 @@ const Hero = () => {
                       <div className="w-6 h-6 sm:w-10 sm:h-10 rounded-md sm:rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shrink-0 shadow-md">
                         <GraduationCap className="w-3 h-3 sm:w-5 sm:h-5" />
                       </div>
-                      {/* Mobile Running Marquee Title */}
-                      <div className="sm:hidden min-w-0 flex-1 overflow-hidden">
-                        <motion.div
-                          key={activeTitle}
-                          animate={{ x: [0, "-50%"] }}
-                          transition={{
-                            repeat: Infinity,
-                            duration: Math.max(8, activeTitle.length * 0.4),
-                            ease: "linear"
-                          }}
-                          className="inline-flex whitespace-nowrap text-[9px] font-bold text-white gap-6"
-                        >
-                          <span className="flex items-center gap-1.5">
+                      {/* Title Runs (Marquee), Subtitle Stays Static */}
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <div className="overflow-hidden">
+                          <motion.div
+                            key={activeTitle}
+                            animate={{ x: [0, "-50%"] }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: Math.max(10, activeTitle.length * 0.4),
+                              ease: "linear"
+                            }}
+                            className="inline-flex whitespace-nowrap text-[9px] sm:text-xs font-bold text-white gap-6"
+                          >
                             <span>{activeTitle}</span>
-                            {activeSubtitle && <span className="text-emerald-300 font-medium">({activeSubtitle})</span>}
-                          </span>
-                          <span className="flex items-center gap-1.5">
                             <span>{activeTitle}</span>
-                            {activeSubtitle && <span className="text-emerald-300 font-medium">({activeSubtitle})</span>}
-                          </span>
-                        </motion.div>
-                      </div>
+                          </motion.div>
+                        </div>
 
-                      {/* Desktop Title & Subtitle */}
-                      <div className="hidden sm:block min-w-0">
-                        <p className="text-xs font-bold text-white truncate">{activeTitle}</p>
-                        <p className="text-[10px] text-emerald-300 font-medium truncate">{activeSubtitle}</p>
+                        {activeSubtitle && (
+                          <p className="text-[8px] sm:text-[10px] text-emerald-300 font-medium truncate mt-0.5">
+                            {activeSubtitle}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <span className="flex h-2 w-2 sm:h-2.5 sm:w-2.5 relative shrink-0">

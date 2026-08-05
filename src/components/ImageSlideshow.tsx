@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { formatImageUrl } from '@/utils/imageCompression';
 
@@ -117,19 +118,31 @@ const ImageSlideshow: React.FC<ImageSlideshowProps> = ({
               <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shrink-0 shadow-md">
                 <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 {activeBadge && (
                   <span className="inline-block text-[8px] sm:text-[9px] font-black uppercase tracking-wider text-emerald-300">
                     {activeBadge}
                   </span>
                 )}
                 {activeTitle && (
-                  <h4 className="text-xs sm:text-sm font-black text-white truncate leading-tight">
-                    {activeTitle}
-                  </h4>
+                  <div className="overflow-hidden">
+                    <motion.div
+                      key={activeTitle}
+                      animate={{ x: [0, "-50%"] }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: Math.max(10, activeTitle.length * 0.4),
+                        ease: "linear"
+                      }}
+                      className="inline-flex whitespace-nowrap text-xs sm:text-sm font-black text-white gap-6"
+                    >
+                      <span>{activeTitle}</span>
+                      <span>{activeTitle}</span>
+                    </motion.div>
+                  </div>
                 )}
                 {activeSubtitle && (
-                  <p className="text-[10px] sm:text-xs text-slate-300 font-medium truncate">
+                  <p className="text-[10px] sm:text-xs text-slate-300 font-medium truncate mt-0.5">
                     {activeSubtitle}
                   </p>
                 )}
