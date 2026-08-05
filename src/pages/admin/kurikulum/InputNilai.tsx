@@ -14,19 +14,22 @@ import {
 import { showSuccess, showError } from '@/utils/toast';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Badge } from '@/components/ui/badge';
+import { fetchMataPelajaran, DEFAULT_MAPELS, normalizeMapelName, MapelItem } from '@/utils/mapel';
 
 interface NilaiItem {
   student_id: string;
   mapel_id: string;
+  mapel_nama?: string;
   tp_scores: Record<string, number>; // tp_id: score
   sas_score: number; // Sumatif Akhir Semester
   description: string;
+  final_score?: number;
 }
 
 const InputNilai = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
-  const [mapels, setMapels] = useState<any[]>([]);
+  const [mapels, setMapels] = useState<MapelItem[]>(DEFAULT_MAPELS);
   const [bedahCP, setBedahCP] = useState<any[]>([]);
   const [nilaiList, setNilaiList] = useState<NilaiItem[]>([]);
   
@@ -47,9 +50,11 @@ const InputNilai = () => {
       
       setStudents(res?.find(s => s.id === 'students_list')?.value || []);
       setClasses(res?.find(s => s.id === 'kelas_list')?.value || []);
-      setMapels(res?.find(s => s.id === 'mata_pelajaran_list')?.value || []);
       setBedahCP(res?.find(s => s.id === 'bedah_cp_data')?.value || []);
       setNilaiList(res?.find(s => s.id === 'nilai_siswa_list')?.value || []);
+
+      const loadedMapels = await fetchMataPelajaran();
+      setMapels(loadedMapels && loadedMapels.length > 0 ? loadedMapels : DEFAULT_MAPELS);
     } catch (err) {
       showError('Gagal memuat data');
     } finally {
@@ -61,65 +66,94 @@ const InputNilai = () => {
     return students.filter(s => s.class_id === selectedClass);
   }, [students, selectedClass]);
 
+  const currentMapelObj = useMemo(() => {
+    return mapels.find(m => m.id === selectedMapel);
+  }, [mapels, selectedMapel]);
+
   const currentMapelTP = useMemo(() => {
-    const mapel = mapels.find(m => m.id === selectedMapel);
-    if (!mapel) return [];
+    if (!currentMapelObj) return [];
     
     // Cari fase berdasarkan tingkat kelas (1-6)
     const kelas = classes.find(c => c.id === selectedClass);
     const tingkat = kelas?.tingkat || '1';
     
-    // Pemetaan Fase Kurikulum Merdeka
-    // Tingkat 1-2: Fase A
-    // Tingkat 3-4: Fase B
-    // Tingkat 5-6: Fase C
     const fase = (tingkat === '1' || tingkat === '2') ? 'A' : 
                  (tingkat === '3' || tingkat === '4') ? 'B' : 'C';
 
-    return bedahCP.filter(cp => cp.mata_pelajaran === mapel.nama && cp.fase === fase);
-  }, [mapels, selectedMapel, selectedClass, bedahCP, classes]);
+    const normalizedSelectedMapel = normalizeMapelName(currentMapelObj.nama);
+
+    const matches = bedahCP.filter(cp => {
+      const normCP = normalizeMapelName(cp.mata_pelajaran || '');
+      const isNameMatch = normCP === normalizedSelectedMapel || 
+                          (normCP && normalizedSelectedMapel && (normCP.includes(normalizedSelectedMapel) || normalizedSelectedMapel.includes(normCP)));
+      const isFaseMatch = !cp.fase || cp.fase === fase;
+      return isNameMatch && isFaseMatch;
+    });
+
+    if (matches.length > 0) {
+      return matches;
+    }
+
+    // Default TP Fallback agar guru bisa langsung input nilai tanpa hambatan
+    return [
+      { id: `tp1_${currentMapelObj.id}`, materi_pokok: 'Tujuan Pembelajaran 1 (TP 1)', tp: 'TP 1' },
+      { id: `tp2_${currentMapelObj.id}`, materi_pokok: 'Tujuan Pembelajaran 2 (TP 2)', tp: 'TP 2' },
+      { id: `tp3_${currentMapelObj.id}`, materi_pokok: 'Tujuan Pembelajaran 3 (TP 3)', tp: 'TP 3' },
+      { id: `tp4_${currentMapelObj.id}`, materi_pokok: 'Tujuan Pembelajaran 4 (TP 4)', tp: 'TP 4' },
+    ];
+  }, [currentMapelObj, selectedClass, bedahCP, classes]);
 
   const handleScoreChange = (studentId: string, tpId: string, score: number) => {
+    const mapelNama = currentMapelObj?.nama || '';
     setNilaiList(prev => {
-      const existing = prev.find(n => n.student_id === studentId && n.mapel_id === selectedMapel);
+      const existing = prev.find(n => n.student_id === studentId && (n.mapel_id === selectedMapel || n.mapel_nama === mapelNama));
       if (existing) {
-        return prev.map(n => n.student_id === studentId && n.mapel_id === selectedMapel 
-          ? { ...n, tp_scores: { ...n.tp_scores, [tpId]: score } } 
+        return prev.map(n => (n.student_id === studentId && (n.mapel_id === selectedMapel || n.mapel_nama === mapelNama))
+          ? { ...n, mapel_id: selectedMapel, mapel_nama: mapelNama, tp_scores: { ...n.tp_scores, [tpId]: score } } 
           : n
         );
       }
-      return [...prev, { student_id: studentId, mapel_id: selectedMapel, tp_scores: { [tpId]: score }, sas_score: 0, description: '' }];
+      return [...prev, { student_id: studentId, mapel_id: selectedMapel, mapel_nama: mapelNama, tp_scores: { [tpId]: score }, sas_score: 0, description: '' }];
     });
   };
 
   const handleSASChange = (studentId: string, score: number) => {
+    const mapelNama = currentMapelObj?.nama || '';
     setNilaiList(prev => {
-      const existing = prev.find(n => n.student_id === studentId && n.mapel_id === selectedMapel);
+      const existing = prev.find(n => n.student_id === studentId && (n.mapel_id === selectedMapel || n.mapel_nama === mapelNama));
       if (existing) {
-        return prev.map(n => n.student_id === studentId && n.mapel_id === selectedMapel ? { ...n, sas_score: score } : n);
+        return prev.map(n => (n.student_id === studentId && (n.mapel_id === selectedMapel || n.mapel_nama === mapelNama))
+          ? { ...n, mapel_id: selectedMapel, mapel_nama: mapelNama, sas_score: score } 
+          : n
+        );
       }
-      return [...prev, { student_id: studentId, mapel_id: selectedMapel, tp_scores: {}, sas_score: score, description: '' }];
+      return [...prev, { student_id: studentId, mapel_id: selectedMapel, mapel_nama: mapelNama, tp_scores: {}, sas_score: score, description: '' }];
     });
   };
 
   const generateDescription = (studentId: string) => {
-    const nilai = nilaiList.find(n => n.student_id === studentId && n.mapel_id === selectedMapel);
+    const mapelNama = currentMapelObj?.nama || '';
+    const nilai = nilaiList.find(n => n.student_id === studentId && (n.mapel_id === selectedMapel || n.mapel_nama === mapelNama));
     if (!nilai) return "";
 
-    const scores = Object.entries(nilai.tp_scores);
-    if (scores.length === 0) return "Belum ada data nilai TP.";
+    const scores = Object.entries(nilai.tp_scores || {}).filter(([_, s]) => typeof s === 'number' && !isNaN(s));
+    if (scores.length === 0 && !nilai.sas_score) return "Belum ada data nilai.";
 
-    const highTP = scores.filter(([_, s]) => s >= 85).map(([id, _]) => currentMapelTP.find(t => t.id === id)?.materi_pokok).filter(Boolean);
-    const lowTP = scores.filter(([_, s]) => s < 70).map(([id, _]) => currentMapelTP.find(t => t.id === id)?.materi_pokok).filter(Boolean);
+    const highTP = scores.filter(([_, s]) => s >= 85).map(([id, _]) => currentMapelTP.find(t => t.id === id)?.materi_pokok || id).filter(Boolean);
+    const lowTP = scores.filter(([_, s]) => s < 70).map(([id, _]) => currentMapelTP.find(t => t.id === id)?.materi_pokok || id).filter(Boolean);
 
     let desc = "";
     if (highTP.length > 0) {
-      desc += `Menunjukkan penguasaan yang sangat baik dalam materi ${highTP.join(', ')}. `;
+      desc += `Menunjukkan penguasaan yang sangat baik dalam ${highTP.join(', ')}. `;
     }
     if (lowTP.length > 0) {
-      desc += `Perlu bimbingan lebih lanjut dalam memahami materi ${lowTP.join(', ')}.`;
-    } else if (highTP.length === 0) {
-      desc = "Menunjukkan penguasaan yang cukup dalam seluruh materi yang diajarkan.";
+      desc += `Perlu bimbingan lebih lanjut dalam memahami ${lowTP.join(', ')}.`;
+    } else if (highTP.length === 0 && scores.length > 0) {
+      desc = `Menunjukkan penguasaan yang cukup baik dalam materi ${mapelNama}.`;
+    } else if (nilai.sas_score >= 80) {
+      desc = `Menunjukkan pemahaman yang sangat baik dalam materi ${mapelNama}.`;
+    } else if (nilai.sas_score > 0) {
+      desc = `Menunjukkan pemahaman yang cukup dalam mata pelajaran ${mapelNama}.`;
     }
 
     return desc;
@@ -128,9 +162,24 @@ const InputNilai = () => {
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
+      const mapelNama = currentMapelObj?.nama || '';
       const updatedNilai = nilaiList.map(n => {
-        if (n.mapel_id === selectedMapel) {
-          return { ...n, description: generateDescription(n.student_id) };
+        if (n.mapel_id === selectedMapel || n.mapel_nama === mapelNama) {
+          const tpScores = Object.values(n.tp_scores || {}).filter(s => typeof s === 'number' && !isNaN(s));
+          const avgTP = tpScores.length > 0 ? tpScores.reduce((a, b) => a + b, 0) / tpScores.length : 0;
+          const sas = typeof n.sas_score === 'number' ? n.sas_score : 0;
+          let finalScore = 0;
+          if (avgTP > 0 && sas > 0) finalScore = Math.round((avgTP + sas) / 2);
+          else if (sas > 0) finalScore = sas;
+          else if (avgTP > 0) finalScore = Math.round(avgTP);
+
+          return { 
+            ...n, 
+            mapel_id: selectedMapel,
+            mapel_nama: mapelNama,
+            description: generateDescription(n.student_id),
+            final_score: finalScore
+          };
         }
         return n;
       });
@@ -236,7 +285,10 @@ const InputNilai = () => {
                   </TableHeader>
                   <TableBody>
                     {currentClassStudents.map((student, idx) => {
-                      const nilai = nilaiList.find(n => n.student_id === student.id && n.mapel_id === selectedMapel);
+                      const nilai = nilaiList.find(n => 
+                        n.student_id === student.id && 
+                        (n.mapel_id === selectedMapel || (currentMapelObj && n.mapel_nama && normalizeMapelName(n.mapel_nama) === normalizeMapelName(currentMapelObj.nama)))
+                      );
                       return (
                         <TableRow key={student.id} className="hover:bg-emerald-50/30 transition-colors">
                           <TableCell className="text-center font-medium text-gray-400">{idx + 1}</TableCell>
@@ -246,8 +298,11 @@ const InputNilai = () => {
                               <Input 
                                 type="number" 
                                 min="0" max="100"
-                                value={nilai?.tp_scores[tp.id] || ''}
-                                onChange={(e) => handleScoreChange(student.id, tp.id, parseInt(e.target.value))}
+                                value={nilai?.tp_scores?.[tp.id] !== undefined ? nilai.tp_scores[tp.id] : ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                  handleScoreChange(student.id, tp.id, isNaN(val) ? 0 : val);
+                                }}
                                 className="w-16 mx-auto text-center font-bold rounded-lg h-10 focus:ring-emerald-500"
                               />
                             </TableCell>
@@ -256,8 +311,11 @@ const InputNilai = () => {
                             <Input 
                               type="number" 
                               min="0" max="100"
-                              value={nilai?.sas_score || ''}
-                              onChange={(e) => handleSASChange(student.id, parseInt(e.target.value))}
+                              value={nilai?.sas_score !== undefined ? nilai.sas_score : ''}
+                              onChange={(e) => {
+                                const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                                handleSASChange(student.id, isNaN(val) ? 0 : val);
+                              }}
                               className="w-16 mx-auto text-center font-bold border-blue-200 rounded-lg h-10 focus:ring-blue-500"
                             />
                           </TableCell>

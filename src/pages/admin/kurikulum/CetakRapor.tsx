@@ -15,12 +15,13 @@ import KopSurat from '@/components/KopSurat';
 import PenandatanganDokumen from '@/components/PenandatanganDokumen';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { Badge } from '@/components/ui/badge';
+import { fetchMataPelajaran, DEFAULT_MAPELS, normalizeMapelName, MapelItem } from '@/utils/mapel';
 
 const CetakRapor = () => {
   const { settings } = useSiteSettings();
   const [students, setStudents] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
-  const [mapels, setMapels] = useState<any[]>([]);
+  const [mapels, setMapels] = useState<MapelItem[]>(DEFAULT_MAPELS);
   const [nilaiList, setNilaiList] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
@@ -41,8 +42,10 @@ const CetakRapor = () => {
       const { data: res } = await supabase.from('site_settings').select('id, value');
       setStudents(res?.find(s => s.id === 'students_list')?.value || []);
       setClasses(res?.find(s => s.id === 'kelas_list')?.value || []);
-      setMapels(res?.find(s => s.id === 'mata_pelajaran_list')?.value || []);
       setNilaiList(res?.find(s => s.id === 'nilai_siswa_list')?.value || []);
+
+      const loadedMapels = await fetchMataPelajaran();
+      setMapels(loadedMapels && loadedMapels.length > 0 ? loadedMapels : DEFAULT_MAPELS);
     } catch (err) {
       showError('Gagal memuat data');
     } finally {
@@ -58,26 +61,63 @@ const CetakRapor = () => {
     return classes.find(c => c.id === selectedStudent?.class_id);
   }, [classes, selectedStudent]);
 
+  const activeMapels = useMemo(() => {
+    return mapels && mapels.length > 0 ? mapels : DEFAULT_MAPELS;
+  }, [mapels]);
+
   const studentGrades = useMemo(() => {
     if (!selectedStudentId) return [];
     
-    return mapels.map(mapel => {
-      const nilai = nilaiList.find(n => n.student_id === selectedStudentId && n.mapel_id === mapel.id);
+    return activeMapels.map(mapel => {
+      const normMapel = normalizeMapelName(mapel.nama);
+
+      const nilai = nilaiList.find(n => 
+        n.student_id === selectedStudentId && 
+        (
+          n.mapel_id === mapel.id || 
+          (n.mapel_nama && normalizeMapelName(n.mapel_nama) === normMapel)
+        )
+      );
       
       // Hitung rata-rata TP
-      const tpScores = nilai?.tp_scores ? Object.values(nilai.tp_scores) as number[] : [];
+      const tpScores = nilai?.tp_scores ? (Object.values(nilai.tp_scores) as number[]).filter(s => typeof s === 'number' && !isNaN(s) && s > 0) : [];
       const avgTP = tpScores.length > 0 ? tpScores.reduce((a, b) => a + b, 0) / tpScores.length : 0;
       
-      // Nilai Akhir (Rata-rata TP and SAS)
-      const finalGrade = nilai?.sas_score ? (avgTP + nilai.sas_score) / 2 : avgTP;
+      const sasScore = typeof nilai?.sas_score === 'number' && !isNaN(nilai.sas_score) ? nilai.sas_score : 0;
+
+      let finalGrade = 0;
+      if (avgTP > 0 && sasScore > 0) {
+        finalGrade = (avgTP + sasScore) / 2;
+      } else if (sasScore > 0) {
+        finalGrade = sasScore;
+      } else if (avgTP > 0) {
+        finalGrade = avgTP;
+      } else if (nilai?.final_score) {
+        finalGrade = nilai.final_score;
+      }
+
+      const roundedGrade = Math.round(finalGrade);
+
+      let deskripsi = nilai?.description;
+      if (!deskripsi || deskripsi === "Belum ada deskripsi capaian kompetensi." || deskripsi === "Belum ada data nilai.") {
+        if (roundedGrade >= 85) {
+          deskripsi = `Menunjukkan penguasaan yang sangat baik dalam seluruh materi ${mapel.nama}.`;
+        } else if (roundedGrade >= 70) {
+          deskripsi = `Menunjukkan penguasaan yang baik dalam memahami materi ${mapel.nama}.`;
+        } else if (roundedGrade > 0) {
+          deskripsi = `Perlu bimbingan dan peningkatan konsistensi belajar pada materi ${mapel.nama}.`;
+        } else {
+          deskripsi = `Menunjukkan keikutsertaan yang baik dalam kegiatan pembelajaran ${mapel.nama}.`;
+        }
+      }
 
       return {
         ...mapel,
-        nilai_akhir: Math.round(finalGrade) || 0,
-        deskripsi: nilai?.description || "Belum ada deskripsi capaian kompetensi."
+        nilai_akhir: roundedGrade > 0 ? roundedGrade : '-',
+        deskripsi
       };
     });
-  }, [mapels, nilaiList, selectedStudentId]);
+  }, [activeMapels, nilaiList, selectedStudentId]);
 
   if (isPreviewing && selectedStudent) {
     return (

@@ -23,6 +23,7 @@ import PenandatanganDokumen from '@/components/PenandatanganDokumen';
 import CetakJadwal from '@/components/CetakJadwal';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { loadPersistedClasses } from '@/utils/rombelPersistence';
+import { fetchMataPelajaran, DEFAULT_MAPELS } from '@/utils/mapel';
 
 interface JadwalItem {
   id: string;
@@ -180,12 +181,13 @@ const JadwalPelajaranAdmin = () => {
       const { data: res } = await supabase.from('site_settings').select('id, value');
       const loadedSchedules = res?.find(s => s.id === 'jadwal_pelajaran_list')?.value || [];
       const loadedClasses = await loadPersistedClasses();
-      const loadedMapels = res?.find(s => s.id === 'mata_pelajaran_list')?.value || [];
+      const rawMapels = res?.find(s => s.id === 'mata_pelajaran_list')?.value;
+      const loadedMapels = await fetchMataPelajaran();
       const loadedGuru = res?.find(s => s.id === 'data_guru' || s.id.includes('data_guru') || s.id === 'teachers_list')?.value || [];
 
       setSchedules(loadedSchedules);
       setClasses(loadedClasses);
-      setMapels(loadedMapels);
+      setMapels(rawMapels && rawMapels.length > 0 ? rawMapels : (loadedMapels || DEFAULT_MAPELS));
       setTeachers(Array.isArray(loadedGuru) ? loadedGuru : []);
 
       // Auto-select first class if none selected

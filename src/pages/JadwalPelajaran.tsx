@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CetakJadwal from '@/components/CetakJadwal';
+import { fetchMataPelajaran, DEFAULT_MAPELS } from '@/utils/mapel';
 
 const DAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -69,9 +70,10 @@ const JadwalPelajaranPublic = () => {
         }
       }
 
+      const loadedMapels = await fetchMataPelajaran();
       setSchedules(scheduleData || []);
       setClasses(classData || []);
-      setMapels(mapelData || []);
+      setMapels(mapelData && mapelData.length > 0 ? mapelData : (loadedMapels || DEFAULT_MAPELS));
 
       if (classData && classData.length > 0 && !selectedClass) {
         const first = classData[0];
