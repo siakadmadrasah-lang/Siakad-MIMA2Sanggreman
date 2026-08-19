@@ -29,26 +29,29 @@ const BackupAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  const handleDownloadFile = async (url: string, filename: string, mimeType: string = 'application/zip') => {
+  const handleDownloadFile = (url: string, filename: string) => {
     try {
       showSuccess(`Memulai unduhan ${filename}...`);
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('File tidak ditemukan');
-      const blob = await response.blob();
-      const typedBlob = new Blob([blob], { type: mimeType });
-      const blobUrl = window.URL.createObjectURL(typedBlob);
-      
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+      }, 200);
       showSuccess(`Berhasil mengunduh ${filename}`);
     } catch (err: any) {
       console.error('Download failed:', err);
-      showError(`Gagal mengunduh ${filename}`);
+      try {
+        window.open(url, '_blank');
+      } catch {
+        showError(`Gagal mengunduh ${filename}`);
+      }
     }
   };
 
@@ -183,7 +186,7 @@ const BackupAdmin = () => {
 
                 <button 
                   type="button"
-                  onClick={() => handleDownloadFile('/siakadmadrasah-plesk-ready.zip', 'siakadmadrasah-plesk-ready.zip', 'application/zip')}
+                  onClick={() => handleDownloadFile('/siakadmadrasah-plesk-ready.zip', 'siakadmadrasah-plesk-ready.zip')}
                   className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-2xl h-14 px-8 shadow-xl hover:scale-105 transition-all text-base shrink-0 cursor-pointer"
                 >
                   <Download className="w-5 h-5" />
@@ -210,7 +213,7 @@ const BackupAdmin = () => {
                   </p>
                   <button 
                     type="button"
-                    onClick={() => handleDownloadFile('/database-mysql.sql', 'database-mysql.sql', 'text/plain')}
+                    onClick={() => handleDownloadFile('/database-mysql.sql', 'database-mysql.sql')}
                     className="inline-flex items-center text-blue-300 hover:text-white font-semibold underline text-xs pt-1 cursor-pointer"
                   >
                     <Download className="w-3 h-3 mr-1" /> Unduh Schema MySQL
@@ -226,7 +229,7 @@ const BackupAdmin = () => {
                   </p>
                   <button 
                     type="button"
-                    onClick={() => handleDownloadFile('/PLESK_HOSTING_GUIDE.txt', 'PLESK_HOSTING_GUIDE.txt', 'text/plain')}
+                    onClick={() => handleDownloadFile('/PLESK_HOSTING_GUIDE.txt', 'PLESK_HOSTING_GUIDE.txt')}
                     className="inline-flex items-center text-purple-300 hover:text-white font-semibold underline text-xs pt-1 cursor-pointer"
                   >
                     <ArrowRight className="w-3 h-3 mr-1" /> Baca Panduan Instalasi
