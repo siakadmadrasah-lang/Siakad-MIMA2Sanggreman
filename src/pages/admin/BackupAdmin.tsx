@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Archive,
   Printer,
-  ArrowRight
+  ArrowRight,
+  ExternalLink
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -29,29 +30,58 @@ const BackupAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  const handleDownloadFile = (url: string, filename: string) => {
+  const [downloadingZip, setDownloadingZip] = useState(false);
+
+  const handleDownloadFile = async (url: string, filename: string) => {
     try {
-      showSuccess(`Memulai unduhan ${filename}...`);
+      showSuccess(`Menyiapkan unduhan ${filename}...`);
+      if (filename.endsWith('.zip')) setDownloadingZip(true);
+      
+      const fullUrl = new URL(url, window.location.href).href;
+      
+      // Fetch binary blob to ensure complete file is captured (not a 12KB HTML redirect)
+      const response = await fetch(fullUrl, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      
+      // If it's a zip file but returned less than 50KB, it might be an HTML error page
+      if (filename.endsWith('.zip') && blob.size < 50000) {
+        console.warn('Suspicious small zip file size, falling back to direct link:', blob.size);
+        window.open(fullUrl, '_blank');
+        showSuccess(`Membuka unduhan ${filename} di tab baru`);
+        return;
+      }
+
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.download = filename;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
       document.body.appendChild(link);
       link.click();
+
       setTimeout(() => {
         if (document.body.contains(link)) {
           document.body.removeChild(link);
         }
-      }, 200);
-      showSuccess(`Berhasil mengunduh ${filename}`);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 2000);
+
+      const sizeInMb = (blob.size / (1024 * 1024)).toFixed(2);
+      showSuccess(`Berhasil mengunduh ${filename} (${sizeInMb > 0.01 ? sizeInMb + ' MB' : (blob.size / 1024).toFixed(1) + ' KB'})`);
     } catch (err: any) {
-      console.error('Download failed:', err);
+      console.error('Download failed, trying direct window download:', err);
       try {
-        window.open(url, '_blank');
+        const fullUrl = new URL(url, window.location.href).href;
+        window.open(fullUrl, '_blank');
+        showSuccess(`Mengunduh ${filename} via tautan langsung`);
       } catch {
         showError(`Gagal mengunduh ${filename}`);
       }
+    } finally {
+      setDownloadingZip(false);
     }
   };
 
@@ -184,14 +214,37 @@ const BackupAdmin = () => {
                   </p>
                 </div>
 
-                <button 
-                  type="button"
-                  onClick={() => handleDownloadFile('/siakadmadrasah-plesk-ready.zip', 'siakadmadrasah-plesk-ready.zip')}
-                  className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold rounded-2xl h-14 px-8 shadow-xl hover:scale-105 transition-all text-base shrink-0 cursor-pointer"
-                >
-                  <Download className="w-5 h-5" />
-                  Unduh Package (.ZIP)
-                </button>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <button 
+                    type="button"
+                    disabled={downloadingZip}
+                    onClick={() => handleDownloadFile('/siakadmadrasah-plesk-ready.zip', 'siakadmadrasah-plesk-ready.zip')}
+                    className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-75 text-slate-950 font-extrabold rounded-2xl h-14 px-8 shadow-xl hover:scale-105 active:scale-95 transition-all text-base shrink-0 cursor-pointer"
+                  >
+                    {downloadingZip ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Mengunduh...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-5 h-5" />
+                        Unduh Package (.ZIP 1.6 MB)
+                      </>
+                    )}
+                  </button>
+
+                  <a 
+                    href="https://github.com/siakadmadrasah-lang/Master-Siakad/archive/refs/heads/main.zip"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl h-14 px-5 border border-white/20 hover:scale-105 transition-all text-sm shrink-0"
+                    title="Unduh Source Code Utuh langsung dari GitHub"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Source ZIP (GitHub)
+                  </a>
+                </div>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4 text-xs">
