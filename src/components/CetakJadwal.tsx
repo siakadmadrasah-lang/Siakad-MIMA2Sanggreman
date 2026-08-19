@@ -123,16 +123,16 @@ export const CetakJadwal: React.FC<CetakJadwalProps> = ({
   return (
     <div className="min-h-screen bg-slate-100 p-0 text-slate-900 font-serif">
       {/* Top Bar for Print Controls - Non-Printable */}
-      <div className="sticky top-0 z-[100] bg-white border-b border-slate-200 p-4 flex flex-wrap justify-between items-center print:hidden shadow-md gap-3">
-        <Button variant="ghost" onClick={onClose} className="font-bold text-slate-600 hover:bg-slate-100">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Kembali ke Aplikasi
-        </Button>
+      <div className="sticky top-0 z-[100] bg-white/95 backdrop-blur-md border-b border-slate-200 p-3 sm:p-4 flex justify-between items-center print:hidden shadow-md gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={onClose} className="font-bold text-slate-700 hover:bg-slate-100 rounded-xl h-9">
+            <ArrowLeft className="w-4 h-4 mr-1.5" /> Kembali
+          </Button>
 
-        <div className="flex flex-wrap items-center gap-3">
           {/* Class Selector Dropdown */}
-          {uniqueClassesList && uniqueClassesList.length > 0 && (
-            <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-              <span className="text-xs font-bold text-slate-600 pl-1">Kelas:</span>
+          {uniqueClassesList && uniqueClassesList.length > 1 && (
+            <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200">
+              <span className="text-xs font-bold text-slate-600">Kelas:</span>
               <select
                 value={activeClassId}
                 onChange={(e) => setActiveClassId(e.target.value)}
@@ -146,60 +146,19 @@ export const CetakJadwal: React.FC<CetakJadwalProps> = ({
               </select>
             </div>
           )}
+        </div>
 
-          {/* Layout Mode */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-            <Button
-              size="sm"
-              variant={layoutMode === 'grid' ? 'default' : 'ghost'}
-              onClick={() => { setLayoutMode('grid'); setOrientation('portrait'); }}
-              className={`h-8 text-xs font-bold rounded-lg ${layoutMode === 'grid' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600'}`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5 mr-1" /> Grid Kartu Harian
-            </Button>
-            <Button
-              size="sm"
-              variant={layoutMode === 'matrix' ? 'default' : 'ghost'}
-              onClick={() => { setLayoutMode('matrix'); setOrientation('landscape'); }}
-              className={`h-8 text-xs font-bold rounded-lg ${layoutMode === 'matrix' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600'}`}
-            >
-              <TableIcon className="w-3.5 h-3.5 mr-1" /> Matriks Mingguan
-            </Button>
-          </div>
-
-          {/* Orientation Switcher */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-            <Button
-              size="sm"
-              variant={orientation === 'portrait' ? 'default' : 'ghost'}
-              onClick={() => setOrientation('portrait')}
-              className={`h-8 text-xs font-bold rounded-lg ${orientation === 'portrait' ? 'bg-slate-800 text-white' : 'text-slate-600'}`}
-            >
-              Portrait (Tegak)
-            </Button>
-            <Button
-              size="sm"
-              variant={orientation === 'landscape' ? 'default' : 'ghost'}
-              onClick={() => setOrientation('landscape')}
-              className={`h-8 text-xs font-bold rounded-lg ${orientation === 'landscape' ? 'bg-slate-800 text-white' : 'text-slate-600'}`}
-            >
-              Landscape (Mendatar)
-            </Button>
-          </div>
-
-          <PrintSecurityIndicator 
-            documentTitle={`Jadwal Pelajaran ${currentClassObj?.nama_kelas || className || 'Madrasah'}`} 
-          />
-
+        <div className="flex items-center gap-2">
           <Button 
+            size="sm"
             onClick={() => {
               requirePrintAuth(() => {
                 window.print();
               }, `Jadwal Pelajaran ${currentClassObj?.nama_kelas || className || 'Madrasah'}`);
             }} 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 font-bold h-10 rounded-xl shadow-lg cursor-pointer"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 font-bold h-9 rounded-xl shadow-md cursor-pointer flex items-center gap-2 text-xs sm:text-sm"
           >
-            <Printer className="w-4 h-4 mr-2" /> Cetak Jadwal
+            <Printer className="w-4 h-4" /> <span>Cetak Jadwal</span>
           </Button>
         </div>
       </div>

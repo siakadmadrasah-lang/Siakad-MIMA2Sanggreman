@@ -107,79 +107,23 @@ export const CetakPengumumanBerita: React.FC<CetakPengumumanBeritaProps> = ({
       className="fixed inset-0 z-[9999] bg-slate-900/90 overflow-y-auto font-serif print:static print:bg-white print:overflow-visible"
     >
       {/* Top Navigation & Settings Bar - Hidden on Print */}
-      <div className="sticky top-0 z-[10000] bg-white border-b border-slate-200 p-4 flex flex-wrap justify-between items-center print:hidden shadow-md gap-3">
-        <Button variant="ghost" onClick={onClose} className="font-bold text-slate-700 hover:bg-slate-100">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Kembali
+      <div className="sticky top-0 z-[10000] bg-white/95 backdrop-blur-md border-b border-slate-200 p-3 sm:p-4 flex justify-between items-center print:hidden shadow-md gap-3">
+        <Button variant="outline" size="sm" onClick={onClose} className="font-bold text-slate-700 hover:bg-slate-100 rounded-xl h-9">
+          <ArrowLeft className="w-4 h-4 mr-1.5" /> Kembali
         </Button>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Toggles */}
-          <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-            <input 
-              type="checkbox" 
-              checked={showKop} 
-              onChange={e => setShowKop(e.target.checked)} 
-              className="rounded text-emerald-600 focus:ring-emerald-500"
-            />
-            Kop Surat
-          </label>
-
-          <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-            <input 
-              type="checkbox" 
-              checked={showSignature} 
-              onChange={e => setShowSignature(e.target.checked)} 
-              className="rounded text-emerald-600 focus:ring-emerald-500"
-            />
-            Penandatangan
-          </label>
-
-          {imagesList.length > 0 && (
-            <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-              <input 
-                type="checkbox" 
-                checked={showImages} 
-                onChange={e => setShowImages(e.target.checked)} 
-                className="rounded text-emerald-600 focus:ring-emerald-500"
-              />
-              Gambar / Foto
-            </label>
-          )}
-
-          {/* Orientation Switcher */}
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-            <Button
-              size="sm"
-              variant={orientation === 'portrait' ? 'default' : 'ghost'}
-              onClick={() => setOrientation('portrait')}
-              className={`h-7 text-xs font-bold rounded-lg ${orientation === 'portrait' ? 'bg-slate-800 text-white' : 'text-slate-600'}`}
-            >
-              Portrait
-            </Button>
-            <Button
-              size="sm"
-              variant={orientation === 'landscape' ? 'default' : 'ghost'}
-              onClick={() => setOrientation('landscape')}
-              className={`h-7 text-xs font-bold rounded-lg ${orientation === 'landscape' ? 'bg-slate-800 text-white' : 'text-slate-600'}`}
-            >
-              Landscape
-            </Button>
-          </div>
-
-          <PrintSecurityIndicator 
-            documentTitle={`${isAnnouncement ? 'Pengumuman Resmi' : isGallery ? 'Dokumentasi Galeri' : 'Berita / Artikel'}: ${item.title || 'Dokumen'}`} 
-          />
-
+        <div className="flex items-center gap-2">
           <Button 
+            size="sm"
             onClick={() => {
               const docTypeLabel = isAnnouncement ? 'Pengumuman Resmi' : isGallery ? 'Dokumentasi Galeri' : 'Berita / Artikel';
               requirePrintAuth(() => {
                 window.print();
               }, `${docTypeLabel}: ${item.title || 'Dokumen'}`);
             }} 
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 font-bold h-10 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 font-bold h-9 rounded-xl shadow-md flex items-center gap-2 cursor-pointer text-xs sm:text-sm"
           >
-            <Printer className="w-4 h-4" /> Cetak Dokumen
+            <Printer className="w-4 h-4" /> <span>Cetak Dokumen</span>
           </Button>
         </div>
       </div>
