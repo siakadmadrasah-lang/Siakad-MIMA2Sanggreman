@@ -4,10 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, Home, Info, Bell, LayoutGrid, Link as LinkIcon, 
   Sparkles, ChevronDown, Presentation, Calendar, Library, 
-  Languages, Users as UsersIcon, Compass, Building, GraduationCap,
-  Menu, X
+  Languages, Users as UsersIcon, Compass, Building, GraduationCap
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +14,6 @@ import HeaderTitleAnimation from './HeaderTitleAnimation';
 const Navbar = () => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { settings } = useSiteSettings();
   const general = settings.general || {};
 
@@ -69,8 +66,8 @@ const Navbar = () => {
           </div>
         </a>
 
-        {/* Desktop Navigation Links */}
-        <div className="hidden lg:flex items-center gap-4 xl:gap-5">
+        {/* Navigation Links */}
+        <div className="hidden md:flex items-center gap-4 xl:gap-5">
           {primaryNavLinks.map((link, index) => (
             <a key={index} href={link.href} className="flex items-center gap-1.5 font-bold text-[11px] uppercase tracking-wider transition-all hover:text-emerald-600 text-slate-700 hover:scale-105">
               <link.icon className="w-3.5 h-3.5 text-slate-400" /> {link.name}
@@ -107,85 +104,8 @@ const Navbar = () => {
               <DropdownMenuItem onClick={() => navigate('/exam-cards')} className="rounded-lg font-bold text-[11px] uppercase py-2.5 cursor-pointer"><UsersIcon className="w-4 h-4 mr-2 text-purple-500" /> Kartu Peserta TKAD</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <a href="/spmb">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-4 sm:px-5 py-2 sm:py-2.5 font-bold text-[10px] sm:text-[11px] tracking-wide shadow-md shadow-emerald-600/20">
-              DAFTAR SPMB
-            </Button>
-          </a>
-        </div>
-
-        {/* Mobile & Tablet Action Header */}
-        <div className="flex lg:hidden items-center gap-2">
-          <a href="/spmb">
-            <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-3 py-1.5 font-bold text-[10px] shadow-sm">
-              SPMB
-            </Button>
-          </a>
-
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-            aria-label="Toggle Mobile Menu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
         </div>
       </div>
-
-      {/* Mobile Drawer Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden mt-2 p-4 rounded-2xl bg-white/95 backdrop-blur-xl border border-slate-200 shadow-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-100">
-            {primaryNavLinks.map((link, idx) => (
-              <a
-                key={idx}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
-              >
-                <link.icon className="w-4 h-4 text-emerald-600" />
-                <span>{link.name}</span>
-              </a>
-            ))}
-          </div>
-
-          <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-2 block">
-              Layanan & Akademik
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-              {academicLinks.slice(0, 6).map((item, idx) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      navigate(item.href);
-                    }}
-                    className="flex items-center gap-2 p-2 rounded-xl text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 text-left transition-colors"
-                  >
-                    <Icon className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span className="truncate">{item.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-end">
-            <a
-              href="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-xs font-bold text-slate-600 hover:text-emerald-700 px-3 py-1.5 rounded-lg bg-slate-100"
-            >
-              Login Admin
-            </a>
-          </div>
-        </div>
-      )}
     </nav>
   );
 };
