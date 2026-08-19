@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { 
   Printer, ArrowLeft, Calendar, Tag, FileText, CheckCircle2, 
-  Users, MapPin, Clock, UserCheck, Eye, EyeOff, Layout, FileSpreadsheet
+  Users, MapPin, Clock, UserCheck, Eye, EyeOff, Layout, FileSpreadsheet,
+  SlidersHorizontal, ChevronDown, X, Check
 } from 'lucide-react';
 import KopSurat from '@/components/KopSurat';
 import PenandatanganDokumen from '@/components/PenandatanganDokumen';
@@ -58,6 +59,7 @@ export const CetakLaporanPembiasaan: React.FC<CetakLaporanPembiasaanProps> = ({
   const { activeMadrasah, activeMadrasahId } = useMadrasah();
   const { requirePrintAuth } = usePrintSecurity();
   
+  const [showOptions, setShowOptions] = useState(false);
   const [showKop, setShowKop] = useState(true);
   const [showSignature, setShowSignature] = useState(true);
   const [showImages, setShowImages] = useState(true);
@@ -171,122 +173,193 @@ export const CetakLaporanPembiasaan: React.FC<CetakLaporanPembiasaanProps> = ({
       className="fixed inset-0 z-[9000] bg-slate-900/90 backdrop-blur-md overflow-y-auto flex flex-col items-center p-0 md:p-6 print:p-0 print:bg-white print:static print:overflow-visible"
     >
       {/* Control Bar (Hidden when printing) */}
-      <div className="w-full max-w-5xl bg-white border border-slate-200 shadow-xl rounded-b-xl md:rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-50 print:hidden">
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onClose}
-            className="flex items-center gap-1.5 text-slate-700 hover:bg-slate-100"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Kembali</span>
-          </Button>
-          <div>
-            <h2 className="text-base font-bold text-slate-800 leading-tight">
-              {mode === 'rekap' ? 'Pratinjau Jurnal Rekap Pembiasaan' : 'Pratinjau Laporan Kegiatan Pembiasaan'}
-            </h2>
-            <p className="text-xs text-slate-500">
-              Format Dokumen Siap Cetak (Akreditasi & Administrasi Madrasah)
-            </p>
-          </div>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Toggle Kop */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowKop(!showKop)}
-            className={`text-xs h-8 ${showKop ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-600'}`}
-          >
-            {showKop ? <Eye className="w-3.5 h-3.5 mr-1" /> : <EyeOff className="w-3.5 h-3.5 mr-1" />}
-            Kop Surat
-          </Button>
-
-          {/* Toggle Signature */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSignature(!showSignature)}
-            className={`text-xs h-8 ${showSignature ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-600'}`}
-          >
-            {showSignature ? <Eye className="w-3.5 h-3.5 mr-1" /> : <EyeOff className="w-3.5 h-3.5 mr-1" />}
-            Tanda Tangan
-          </Button>
-
-          {/* Signer Type Selector */}
-          {showSignature && (
-            <select
-              value={signerType}
-              onChange={(e) => setSignerType(e.target.value as any)}
-              className="text-xs h-8 px-2 border border-slate-300 rounded-md bg-white text-slate-700 font-medium focus:ring-1 focus:ring-emerald-500"
+      <div className="w-full max-w-5xl bg-white border border-slate-200/90 shadow-xl rounded-b-2xl md:rounded-2xl p-3 sm:p-4 mb-4 sticky top-0 z-50 print:hidden transition-all">
+        <div className="flex items-center justify-between gap-2.5 flex-wrap sm:flex-nowrap">
+          {/* Left: Kembali & Judul */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onClose}
+              className="h-9 px-3 text-slate-700 hover:bg-slate-100 rounded-xl font-medium shrink-0"
             >
-              <option value="pendamping">TTD: Kepala & Guru Pendamping</option>
-              <option value="koordinator">TTD: Kepala & Koordinator</option>
-              <option value="kepala_only">TTD: Kepala Madrasah Saja</option>
-            </select>
-          )}
+              <ArrowLeft className="w-4 h-4 mr-1.5" />
+              <span>Kembali</span>
+            </Button>
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-base font-bold text-slate-800 truncate leading-tight">
+                {mode === 'rekap' ? 'Rekap Pembiasaan Santri' : 'Laporan Kegiatan Pembiasaan'}
+              </h2>
+              <p className="text-[11px] text-slate-500 hidden sm:block truncate">
+                Format Siap Cetak (Akreditasi & Administrasi)
+              </p>
+            </div>
+          </div>
 
-          {mode === 'single' && (
+          {/* Right: Actions & Settings */}
+          <div className="flex items-center gap-2 shrink-0 ml-auto flex-wrap">
+            {/* Opsi Tampilan & Format Dropdown */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowOptions(!showOptions)}
+                className={`h-9 px-3 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  showOptions 
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                }`}
+                title="Pengaturan Kop, TTD, Foto, Orientasi & Kertas"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Opsi Dokumen</span>
+                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showOptions ? 'rotate-180' : ''}`} />
+              </Button>
+
+              {/* Popover/Dropdown Menu Panel */}
+              {showOptions && (
+                <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 z-[9999] animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Opsi Tampilan Dokumen</span>
+                    <button 
+                      onClick={() => setShowOptions(false)} 
+                      className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    {/* Kop Surat */}
+                    <label className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 cursor-pointer border border-slate-100 transition-colors">
+                      <span className="font-semibold text-slate-700">Kop Surat Madrasah</span>
+                      <input 
+                        type="checkbox" 
+                        checked={showKop} 
+                        onChange={(e) => setShowKop(e.target.checked)} 
+                        className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                      />
+                    </label>
+
+                    {/* Tanda Tangan & Opsi Penandatangan */}
+                    <div className="p-2 rounded-xl bg-slate-50/80 border border-slate-100 space-y-2">
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <span className="font-semibold text-slate-700">Kolom Tanda Tangan</span>
+                        <input 
+                          type="checkbox" 
+                          checked={showSignature} 
+                          onChange={(e) => setShowSignature(e.target.checked)} 
+                          className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                        />
+                      </label>
+                      {showSignature && (
+                        <select
+                          value={signerType}
+                          onChange={(e) => setSignerType(e.target.value as any)}
+                          className="w-full text-xs h-8 px-2 border border-slate-200 rounded-lg bg-white text-slate-700 font-medium focus:ring-1 focus:ring-emerald-500"
+                        >
+                          <option value="pendamping">TTD: Kepala & Guru Pendamping</option>
+                          <option value="koordinator">TTD: Kepala & Koordinator</option>
+                          <option value="kepala_only">TTD: Kepala Madrasah Saja</option>
+                        </select>
+                      )}
+                    </div>
+
+                    {/* Foto Bukti */}
+                    {mode === 'single' && (
+                      <label className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 cursor-pointer border border-slate-100 transition-colors">
+                        <span className="font-semibold text-slate-700">Foto Bukti Kegiatan</span>
+                        <input 
+                          type="checkbox" 
+                          checked={showImages} 
+                          onChange={(e) => setShowImages(e.target.checked)} 
+                          className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                        />
+                      </label>
+                    )}
+
+                    {/* Orientasi & Kertas */}
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100">
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">Orientasi</span>
+                        <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
+                          <button
+                            type="button"
+                            onClick={() => setOrientation('portrait')}
+                            className={`py-1 rounded-lg text-center font-bold text-[11px] transition-all ${
+                              orientation === 'portrait' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                            }`}
+                          >
+                            Tegak
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOrientation('landscape')}
+                            className={`py-1 rounded-lg text-center font-bold text-[11px] transition-all ${
+                              orientation === 'landscape' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                            }`}
+                          >
+                            Mendatar
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-500 block mb-1">Kertas</span>
+                        <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
+                          <button
+                            type="button"
+                            onClick={() => setPaperSize('A4')}
+                            className={`py-1 rounded-lg text-center font-bold text-[11px] transition-all ${
+                              paperSize === 'A4' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                            }`}
+                          >
+                            A4
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPaperSize('F4')}
+                            className={`py-1 rounded-lg text-center font-bold text-[11px] transition-all ${
+                              paperSize === 'F4' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600'
+                            }`}
+                          >
+                            F4
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Excel Export */}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowImages(!showImages)}
-              className={`text-xs h-8 ${showImages ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-600'}`}
+              onClick={handleExportExcel}
+              className="h-9 px-3 text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200 rounded-xl font-semibold flex items-center gap-1.5 shadow-xs"
+              title="Unduh format spreadsheet Excel"
             >
-              {showImages ? <Eye className="w-3.5 h-3.5 mr-1" /> : <EyeOff className="w-3.5 h-3.5 mr-1" />}
-              Foto Bukti
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Excel</span>
             </Button>
-          )}
 
-          {/* Orientation Toggle */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setOrientation(orientation === 'portrait' ? 'landscape' : 'portrait')}
-            className="text-xs h-8 text-slate-700"
-          >
-            <Layout className="w-3.5 h-3.5 mr-1" />
-            {orientation === 'portrait' ? 'Tegak (Portrait)' : 'Mendatar (Landscape)'}
-          </Button>
+            {/* Security Indicator */}
+            <PrintSecurityIndicator 
+              documentTitle={mode === 'rekap' ? `Rekap Jurnal Pembiasaan (${periodeLabel})` : `Laporan Pembiasaan: ${item?.nama_kegiatan || 'Santri'}`} 
+            />
 
-          {/* Paper Size */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPaperSize(paperSize === 'A4' ? 'F4' : 'A4')}
-            className="text-xs h-8 text-slate-700"
-          >
-            Ukuran: {paperSize}
-          </Button>
-
-          {/* Excel Export */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportExcel}
-            className="text-xs h-8 bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600 flex items-center gap-1"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            Export Excel
-          </Button>
-
-          {/* Security Indicator */}
-          <PrintSecurityIndicator 
-            documentTitle={mode === 'rekap' ? `Rekap Jurnal Pembiasaan (${periodeLabel})` : `Laporan Pembiasaan: ${item?.nama_kegiatan || 'Santri'}`} 
-          />
-
-          {/* Direct Print */}
-          <Button
-            size="sm"
-            onClick={handlePrint}
-            className="text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-sm font-semibold cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Cetak Dokumen</span>
-          </Button>
+            {/* Direct Print */}
+            <Button
+              size="sm"
+              onClick={handlePrint}
+              className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1.5 shadow-md font-bold text-xs rounded-xl cursor-pointer"
+            >
+              <Printer className="w-4 h-4" />
+              <span>Cetak Dokumen</span>
+            </Button>
+          </div>
         </div>
       </div>
 
